@@ -2,7 +2,21 @@ from datetime import date, datetime
 from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field
 
+from enum import Enum
+
 from app.models.enums import LeaveStatus
+
+
+class LeaveReviewAction(str, Enum):
+    APPROVE = "APPROVE"
+    REJECT = "REJECT"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+
+
+class LeaveReviewRequest(BaseModel):
+    action: LeaveReviewAction
+    review_notes: Optional[str] = Field(default=None, max_length=500)
 
 
 class LeaveRequestBase(BaseModel):

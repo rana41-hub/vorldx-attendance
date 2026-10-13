@@ -4,10 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.dependencies.auth import get_optional_current_user, require_self_or_admin
 from app.dependencies.database import get_db
 from app.models.attendance import AttendanceRecord
 from app.models.employee import Employee
-from app.models.enums import AttendanceStatus
+from app.models.enums import AttendanceStatus, UserRole
+from app.models.user import User
 from app.schemas.attendance import (
     AttendanceCheckInRequest,
     AttendanceCheckOutRequest,
@@ -23,8 +25,16 @@ def list_attendance(
     employee_id: Optional[int] = Query(None, description="Filter by employee ID"),
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
+    current_user: Optional[User] = Depends(get_optional_current_user),
     db: Session = Depends(get_db),
 ):
+    # Enforce employee data isolation if authenticated as EMPLOYEE
+    if current_user and current_user.role == UserRole.EMPLOYEE:
+        caller_emp = current_user.employee
+        if not caller_emp:
+            return []
+        employee_id = caller_emp.id
+
     query = select(AttendanceRecord)
     if attendance_date:
         query = query.where(AttendanceRecord.attendance_date == attendance_date)
@@ -48,8 +58,12 @@ def list_attendance(
 )
 def record_check_in(
     payload: AttendanceCheckInRequest,
+    current_user: Optional[User] = Depends(get_optional_current_user),
     db: Session = Depends(get_db),
 ):
+    if current_user:
+        require_self_or_admin(payload.employee_id, current_user)
+
     employee = db.get(Employee, payload.employee_id)
     if not employee:
         raise HTTPException(
@@ -88,8 +102,12 @@ def record_check_in(
 @router.post("/check-out", response_model=AttendanceRecordResponse)
 def record_check_out(
     payload: AttendanceCheckOutRequest,
+    current_user: Optional[User] = Depends(get_optional_current_user),
     db: Session = Depends(get_db),
 ):
+    if current_user:
+        require_self_or_admin(payload.employee_id, current_user)
+
     now = datetime.now(timezone.utc)
     today = now.date()
 
