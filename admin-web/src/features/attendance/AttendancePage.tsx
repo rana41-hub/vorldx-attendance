@@ -128,7 +128,7 @@ export const AttendancePage: React.FC = () => {
         <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
           <QrCode className="w-4 h-4 text-indigo-600" />
           <h3 className="text-sm font-semibold text-slate-900">
-            QR Check-In Simulator (Day 1 Test Console)
+            Attendance Simulation & Management Console
           </h3>
         </div>
         <p className="text-xs text-slate-500 mt-2 mb-4">

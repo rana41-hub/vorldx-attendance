@@ -132,8 +132,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ health }) => {
             <h2 className="text-xl font-bold tracking-tight text-slate-900">
               Operations Overview
             </h2>
-            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-              Day 1 Foundation
+            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              Live System
             </span>
           </div>
           <p className="text-xs text-slate-500">

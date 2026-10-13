@@ -115,7 +115,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             <Shield className="w-3.5 h-3.5 text-indigo-400" />
             <span className="font-medium text-slate-200">VorldX Enterprise</span>
           </div>
-          <p className="text-[11px] text-slate-500">Day 1 Architecture & Foundation</p>
+          <p className="text-[11px] text-slate-500">Enterprise Attendance Platform</p>
         </div>
       </aside>
 

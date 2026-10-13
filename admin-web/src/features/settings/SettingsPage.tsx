@@ -75,7 +75,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ health }) => {
             <h3 className="text-sm font-semibold text-slate-900">
               Attendance Policy Parameters
             </h3>
-            <p className="text-xs text-slate-500">Configurable policy defaults (Day 1 schema)</p>
+            <p className="text-xs text-slate-500">Configurable organizational policy defaults</p>
           </div>
         </div>
 

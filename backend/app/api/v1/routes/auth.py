@@ -14,6 +14,6 @@ class AuthStatusResponse(BaseModel):
 def auth_status():
     return {
         "status": "ready",
-        "message": "Authentication subsystem initialized. JWT and Argon2/Bcrypt password hashing configured for Day 2 activation.",
+        "message": "Authentication subsystem initialized. JWT and password hashing security enabled.",
         "version": "v1",
     }

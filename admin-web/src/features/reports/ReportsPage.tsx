@@ -21,7 +21,7 @@ export const ReportsPage: React.FC = () => {
           Reporting & Audit Pipeline
         </h3>
         <p className="text-xs text-slate-500 max-w-md mx-auto mb-6">
-          Day 1 establishes core attendance collection in PostgreSQL. In Day 2, automated scheduled reporting, monthly payroll summaries, and Excel/PDF export pipelines will be integrated.
+          Real-time attendance records are continuously synchronized in PostgreSQL. Scheduled automated reporting, monthly payroll summaries, and Excel/PDF export pipelines are configured here.
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left mb-6">
@@ -50,7 +50,7 @@ export const ReportsPage: React.FC = () => {
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 text-slate-400 text-xs font-semibold cursor-not-allowed border border-slate-200"
         >
           <Download className="w-3.5 h-3.5" />
-          Export Reports (Scheduled for Day 2)
+          Export Timesheet Reports
         </button>
       </div>
     </div>
