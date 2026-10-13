@@ -15,10 +15,12 @@ class AttendanceRecordBase(BaseModel):
 class AttendanceCheckInRequest(BaseModel):
     employee_id: int
     source: Optional[str] = "OFFICE_QR"
+    timestamp: Optional[datetime] = None
 
 
 class AttendanceCheckOutRequest(BaseModel):
     employee_id: int
+    timestamp: Optional[datetime] = None
 
 
 class AttendanceRecordResponse(AttendanceRecordBase):

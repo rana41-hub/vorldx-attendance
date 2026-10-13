@@ -11,6 +11,7 @@ from app.models.employee import Employee
 from app.models.enums import UserRole
 from app.models.leave import LeaveRequest
 from app.models.user import User
+from app.models.wfh import WFHRequest
 from app.schemas.employee import (
     EmployeeCreate,
     EmployeeDeleteResponse,
@@ -161,13 +162,21 @@ def delete_employee(
         )
     ) or 0
 
-    if attendance_count > 0 or leave_count > 0:
+    # Check for related WFH requests
+    wfh_count = db.scalar(
+        select(func.count(WFHRequest.id)).where(
+            WFHRequest.employee_id == employee_id
+        )
+    ) or 0
+
+    if attendance_count > 0 or leave_count > 0 or wfh_count > 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=(
                 f"Cannot delete employee '{employee.employee_code}' with existing "
                 f"historical records ({attendance_count} attendance records, "
-                f"{leave_count} leave requests). Historical records must be preserved."
+                f"{leave_count} leave requests, {wfh_count} WFH requests). "
+                f"Historical records must be preserved."
             ),
         )
 

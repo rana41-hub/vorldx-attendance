@@ -49,3 +49,13 @@ class User(Base):
         back_populates="reviewer",
         foreign_keys="LeaveRequest.reviewed_by",
     )
+    reviewed_wfh_requests: Mapped[list["WFHRequest"]] = relationship(
+        "WFHRequest",
+        back_populates="reviewer",
+        foreign_keys="WFHRequest.reviewed_by",
+    )
+    updated_policies: Mapped[list["AttendancePolicy"]] = relationship(
+        "AttendancePolicy",
+        back_populates="updater",
+        foreign_keys="AttendancePolicy.updated_by",
+    )

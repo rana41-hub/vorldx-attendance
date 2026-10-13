@@ -55,6 +55,12 @@ class Employee(Base):
         cascade="all, delete-orphan",
         order_by="desc(LeaveRequest.created_at)",
     )
+    wfh_requests: Mapped[list["WFHRequest"]] = relationship(
+        "WFHRequest",
+        back_populates="employee",
+        cascade="all, delete-orphan",
+        order_by="desc(WFHRequest.created_at)",
+    )
 
     @property
     def full_name(self) -> str:
