@@ -1,14 +1,25 @@
 import type {
+  AttendancePolicy,
   AttendanceRecord,
+  AttendanceSummaryResponse,
+  AttendanceTrendsResponse,
   BackendHealthResponse,
   DatabaseHealthResponse,
+  DashboardMetricsResponse,
   Employee,
   LeaveRequest,
+  LoginResponse,
+  PolicyCalculationResponse,
   SystemHealth,
+  User,
+  WFHRequest,
 } from '../types';
 
 const BASE_URL =
   (import.meta.env.VITE_API_BASE_URL as string) || 'http://127.0.0.1:8000';
+
+const TOKEN_KEY = 'vorldx_admin_token';
+const USER_KEY = 'vorldx_admin_user';
 
 export class ApiError extends Error {
   status: number;
@@ -22,25 +33,59 @@ export class ApiError extends Error {
   }
 }
 
+export function getStoredToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function setStoredToken(token: string): void {
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function getStoredUser(): User | null {
+  const raw = localStorage.getItem(USER_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as User;
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredUser(user: User): void {
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+}
+
+export function clearStoredAuth(): void {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+}
+
 async function request<T>(
   endpoint: string,
   options: RequestInit = {},
-  timeoutMs = 6000
+  timeoutMs = 8000
 ): Promise<T> {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeoutMs);
 
   const url = `${BASE_URL.replace(/\/+$/, '')}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
 
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+    ...((options.headers as Record<string, string>) || {}),
+  };
+
+  const token = getStoredToken();
+  if (token && !headers.Authorization) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
   try {
     const res = await fetch(url, {
       ...options,
       signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        ...options.headers,
-      },
+      headers,
     });
 
     clearTimeout(id);
@@ -52,13 +97,23 @@ async function request<T>(
       } catch {
         errorBody = await res.text();
       }
-      const message =
-        (typeof errorBody === 'object' &&
-          errorBody !== null &&
-          'detail' in errorBody &&
-          typeof errorBody.detail === 'string' &&
-          errorBody.detail) ||
-        `Request failed with status ${res.status}`;
+
+      let message = `Request failed with status ${res.status}`;
+      if (typeof errorBody === 'object' && errorBody !== null && 'detail' in errorBody) {
+        const detail = (errorBody as { detail: unknown }).detail;
+        if (typeof detail === 'string') {
+          message = detail;
+        } else if (Array.isArray(detail) && detail.length > 0 && detail[0].msg) {
+          message = detail.map((d: { msg?: string }) => d.msg).join(', ');
+        }
+      }
+
+      // If token expired or unauthorized
+      if (res.status === 401 && token) {
+        clearStoredAuth();
+        window.dispatchEvent(new Event('vorldx_auth_expired'));
+      }
+
       throw new ApiError(res.status, message, errorBody);
     }
 
@@ -69,7 +124,7 @@ async function request<T>(
       throw err;
     }
     if (err instanceof DOMException && err.name === 'AbortError') {
-      throw new ApiError(408, 'Request timed out. Please check backend server.');
+      throw new ApiError(408, 'Request timed out. Please verify backend server.');
     }
     throw new ApiError(
       0,
@@ -79,6 +134,27 @@ async function request<T>(
 }
 
 export const api = {
+  // Authentication
+  async login(loginId: string, password: string): Promise<LoginResponse> {
+    const res = await request<LoginResponse>('/api/v1/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ login_id: loginId, password }),
+    });
+    setStoredToken(res.access_token);
+    setStoredUser(res.user);
+    return res;
+  },
+
+  async getMe(): Promise<User> {
+    const user = await request<User>('/api/v1/auth/me');
+    setStoredUser(user);
+    return user;
+  },
+
+  logout(): void {
+    clearStoredAuth();
+  },
+
   // System Health
   async checkSystemHealth(): Promise<SystemHealth> {
     const start = performance.now();
@@ -89,7 +165,6 @@ export const api = {
       ]);
 
       const latencyMs = Math.round(performance.now() - start);
-
       const isDbOk = db.status === 'healthy' && db.database === 'connected';
       const isBackendOk = backend.status === 'healthy';
 
@@ -120,10 +195,42 @@ export const api = {
     }
   },
 
+  // Dashboard & Analytics
+  async getDashboardMetrics(targetDate?: string): Promise<DashboardMetricsResponse> {
+    const query = targetDate ? `?target_date=${encodeURIComponent(targetDate)}` : '';
+    return request<DashboardMetricsResponse>(`/api/v1/analytics/dashboard${query}`);
+  },
+
+  async getAttendanceSummary(
+    startDate: string,
+    endDate: string
+  ): Promise<AttendanceSummaryResponse> {
+    const params = new URLSearchParams({
+      start_date: startDate,
+      end_date: endDate,
+    });
+    return request<AttendanceSummaryResponse>(`/api/v1/analytics/summary?${params.toString()}`);
+  },
+
+  async getAttendanceTrends(
+    startDate?: string,
+    endDate?: string
+  ): Promise<AttendanceTrendsResponse> {
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return request<AttendanceTrendsResponse>(`/api/v1/analytics/trends${query}`);
+  },
+
   // Employees
   async getEmployees(department?: string): Promise<Employee[]> {
     const query = department ? `?department=${encodeURIComponent(department)}` : '';
     return request<Employee[]>(`/api/v1/employees${query}`);
+  },
+
+  async getEmployee(id: number): Promise<Employee> {
+    return request<Employee>(`/api/v1/employees/${id}`);
   },
 
   async createEmployee(data: {
@@ -140,6 +247,55 @@ export const api = {
     });
   },
 
+  async updateEmployee(
+    id: number,
+    data: {
+      employee_code?: string;
+      first_name?: string;
+      last_name?: string;
+      department?: string;
+      designation?: string;
+      phone?: string;
+    }
+  ): Promise<Employee> {
+    return request<Employee>(`/api/v1/employees/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async deleteEmployee(id: number): Promise<{ message: string; id: number }> {
+    return request<{ message: string; id: number }>(`/api/v1/employees/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async createEmployeeAccount(
+    id: number,
+    data: { email: string; password: string }
+  ): Promise<{ message: string; employee_id: number; user_id: number }> {
+    return request<{ message: string; employee_id: number; user_id: number }>(
+      `/api/v1/employees/${id}/account`,
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    );
+  },
+
+  async updateEmployeeStatus(
+    id: number,
+    isActive: boolean
+  ): Promise<{ message: string; is_active: boolean }> {
+    return request<{ message: string; is_active: boolean }>(
+      `/api/v1/employees/${id}/status`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ is_active: isActive }),
+      }
+    );
+  },
+
   // Attendance
   async getAttendance(date?: string, employeeId?: number): Promise<AttendanceRecord[]> {
     const params = new URLSearchParams();
@@ -149,23 +305,107 @@ export const api = {
     return request<AttendanceRecord[]>(`/api/v1/attendance${query}`);
   },
 
-  async recordCheckIn(employeeId: number, source = 'OFFICE_QR'): Promise<AttendanceRecord> {
+  async recordCheckIn(
+    employeeId: number,
+    source = 'OFFICE_QR',
+    timestamp?: string
+  ): Promise<AttendanceRecord> {
     return request<AttendanceRecord>('/api/v1/attendance/check-in', {
       method: 'POST',
-      body: JSON.stringify({ employee_id: employeeId, source }),
+      body: JSON.stringify({ employee_id: employeeId, source, timestamp }),
     });
   },
 
-  async recordCheckOut(employeeId: number): Promise<AttendanceRecord> {
+  async recordCheckOut(employeeId: number, timestamp?: string): Promise<AttendanceRecord> {
     return request<AttendanceRecord>('/api/v1/attendance/check-out', {
       method: 'POST',
-      body: JSON.stringify({ employee_id: employeeId }),
+      body: JSON.stringify({ employee_id: employeeId, timestamp }),
+    });
+  },
+
+  // Attendance Policy
+  async getPolicy(): Promise<AttendancePolicy> {
+    return request<AttendancePolicy>('/api/v1/attendance/policy');
+  },
+
+  async updatePolicy(data: Partial<AttendancePolicy>): Promise<AttendancePolicy> {
+    return request<AttendancePolicy>('/api/v1/attendance/policy', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async calculatePolicy(
+    checkIn: string,
+    checkOut?: string
+  ): Promise<PolicyCalculationResponse> {
+    return request<PolicyCalculationResponse>('/api/v1/attendance/policy/calculate', {
+      method: 'POST',
+      body: JSON.stringify({ check_in: checkIn, check_out: checkOut }),
     });
   },
 
   // Leave Requests
-  async getLeaveRequests(status?: string): Promise<LeaveRequest[]> {
-    const query = status ? `?status=${encodeURIComponent(status)}` : '';
+  async getLeaveRequests(status?: string, employeeId?: number): Promise<LeaveRequest[]> {
+    const params = new URLSearchParams();
+    if (status && status !== 'ALL') params.append('status', status);
+    if (employeeId) params.append('employee_id', String(employeeId));
+    const query = params.toString() ? `?${params.toString()}` : '';
     return request<LeaveRequest[]>(`/api/v1/leave${query}`);
+  },
+
+  async createLeaveRequest(data: {
+    employee_id: number;
+    start_date: string;
+    end_date: string;
+    reason: string;
+  }): Promise<LeaveRequest> {
+    return request<LeaveRequest>('/api/v1/leave', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async reviewLeaveRequest(
+    id: number,
+    action: 'APPROVE' | 'REJECT',
+    notes?: string
+  ): Promise<LeaveRequest> {
+    return request<LeaveRequest>(`/api/v1/leave/${id}/review`, {
+      method: 'PATCH',
+      body: JSON.stringify({ action, review_notes: notes }),
+    });
+  },
+
+  // Work-from-Home (WFH) Requests
+  async getWFHRequests(status?: string, employeeId?: number): Promise<WFHRequest[]> {
+    const params = new URLSearchParams();
+    if (status && status !== 'ALL') params.append('status', status);
+    if (employeeId) params.append('employee_id', String(employeeId));
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return request<WFHRequest[]>(`/api/v1/wfh${query}`);
+  },
+
+  async createWFHRequest(data: {
+    employee_id: number;
+    start_date: string;
+    end_date: string;
+    reason: string;
+  }): Promise<WFHRequest> {
+    return request<WFHRequest>('/api/v1/wfh', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async reviewWFHRequest(
+    id: number,
+    action: 'APPROVE' | 'REJECT',
+    notes?: string
+  ): Promise<WFHRequest> {
+    return request<WFHRequest>(`/api/v1/wfh/${id}/review`, {
+      method: 'PATCH',
+      body: JSON.stringify({ action, review_notes: notes }),
+    });
   },
 };

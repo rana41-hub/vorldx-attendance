@@ -1,267 +1,217 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Users,
   UserCheck,
   UserX,
-  Clock,
-  Database,
-  Server,
-  ShieldCheck,
-  PlusCircle,
-  QrCode,
+  Laptop,
+  AlertCircle,
+  RefreshCw,
+  ArrowRight,
+  ShieldAlert,
 } from 'lucide-react';
 import { SummaryCard } from '../../components/dashboard/SummaryCard';
 import { AttendanceChart } from '../../components/dashboard/AttendanceChart';
 import { RecentAttendanceTable } from '../../components/dashboard/RecentAttendanceTable';
-import type { AttendanceRecord, SystemHealth } from '../../types';
-import { api } from '../../services/api';
+import type {
+  AttendanceRecord,
+  DailyTrendItem,
+  DashboardMetricsResponse,
+  SystemHealth,
+} from '../../types';
+import { api, ApiError } from '../../services/api';
 import { Link } from 'react-router-dom';
 
 interface DashboardPageProps {
   health: SystemHealth;
 }
 
-// Sample fallback records for demonstration
-const SAMPLE_ATTENDANCE: AttendanceRecord[] = [
-  {
-    id: 1,
-    employee_id: 101,
-    employee_name: 'Alex Vance',
-    employee_code: 'VX-0101',
-    department: 'Engineering',
-    attendance_date: new Date().toISOString().split('T')[0],
-    check_in: new Date(Date.now() - 4 * 3600 * 1000).toISOString(),
-    check_out: null,
-    status: 'PRESENT',
-    source: 'OFFICE_QR',
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 2,
-    employee_id: 102,
-    employee_name: 'David Kim',
-    employee_code: 'VX-0102',
-    department: 'Product',
-    attendance_date: new Date().toISOString().split('T')[0],
-    check_in: new Date(Date.now() - 3.5 * 3600 * 1000).toISOString(),
-    check_out: null,
-    status: 'PRESENT',
-    source: 'OFFICE_QR',
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 3,
-    employee_id: 103,
-    employee_name: 'Elena Rostova',
-    employee_code: 'VX-0103',
-    department: 'Security',
-    attendance_date: new Date().toISOString().split('T')[0],
-    check_in: new Date(Date.now() - 3 * 3600 * 1000).toISOString(),
-    check_out: null,
-    status: 'LATE',
-    source: 'OFFICE_QR',
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 4,
-    employee_id: 104,
-    employee_name: 'Sarah Connor',
-    employee_code: 'VX-0104',
-    department: 'Engineering',
-    attendance_date: new Date().toISOString().split('T')[0],
-    check_in: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
-    check_out: new Date(Date.now() - 0.5 * 3600 * 1000).toISOString(),
-    status: 'HALF_DAY',
-    source: 'MANUAL',
-    created_at: new Date().toISOString(),
-  },
-];
-
-export const DashboardPage: React.FC<DashboardPageProps> = ({ health }) => {
-  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
-  const [isDemoData, setIsDemoData] = useState(true);
+export const DashboardPage: React.FC<DashboardPageProps> = () => {
+  const [metrics, setMetrics] = useState<DashboardMetricsResponse | null>(null);
+  const [trends, setTrends] = useState<DailyTrendItem[]>([]);
+  const [recentRecords, setRecentRecords] = useState<AttendanceRecord[]>([]);
+  const [targetDate, setTargetDate] = useState<string>(
+    new Date().toISOString().split('T')[0]
+  );
   const [isLoading, setIsLoading] = useState(false);
-  const [employeeCount, setEmployeeCount] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchRecords = async () => {
+  const fetchDashboardData = useCallback(async (dateStr?: string) => {
     setIsLoading(true);
+    setError(null);
     try {
-      const [liveRecords, employees] = await Promise.all([
-        api.getAttendance(),
+      const activeDate = dateStr || targetDate;
+      const [dashData, trendsData, attendanceLogs, employees] = await Promise.all([
+        api.getDashboardMetrics(activeDate),
+        api.getAttendanceTrends(),
+        api.getAttendance(activeDate),
         api.getEmployees(),
       ]);
 
-      setEmployeeCount(employees.length);
+      setMetrics(dashData);
+      setTrends(trendsData.trends || []);
 
-      if (liveRecords && liveRecords.length > 0) {
-        // Enrich with employee names if available
-        const employeeMap = new Map(employees.map((e) => [e.id, e]));
-        const enriched = liveRecords.map((r) => {
-          const emp = employeeMap.get(r.employee_id);
-          return {
-            ...r,
-            employee_name: emp ? emp.full_name : `Employee #${r.employee_id}`,
-            employee_code: emp ? emp.employee_code : `EMP-${r.employee_id}`,
-            department: emp ? emp.department : 'General',
-          };
-        });
-        setAttendanceRecords(enriched);
-        setIsDemoData(false);
+      const employeeMap = new Map(employees.map((e) => [e.id, e]));
+      const enrichedRecords = (attendanceLogs || []).map((r) => {
+        const emp = employeeMap.get(r.employee_id);
+        return {
+          ...r,
+          employee_name: emp ? emp.full_name : `Employee #${r.employee_id}`,
+          employee_code: emp ? emp.employee_code : `VX-${r.employee_id}`,
+          department: emp ? emp.department : 'General',
+        };
+      });
+
+      setRecentRecords(enrichedRecords);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else if (err instanceof Error) {
+        setError(err.message);
       } else {
-        setAttendanceRecords(SAMPLE_ATTENDANCE);
-        setIsDemoData(true);
+        setError('Failed to retrieve dashboard metrics.');
       }
-    } catch {
-      setAttendanceRecords(SAMPLE_ATTENDANCE);
-      setIsDemoData(true);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [targetDate]);
 
   useEffect(() => {
-    fetchRecords();
-  }, []);
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   return (
     <div className="space-y-6">
-      {/* Welcome & System Status Banner */}
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold tracking-tight text-slate-900">
-              Operations Overview
-            </h2>
-            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              Live System
-            </span>
-          </div>
-          <p className="text-xs text-slate-500">
-            Real-time administrative telemetry, employee presence records, and backend status.
+      {/* Top Banner & Date Filter */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-bold tracking-tight text-slate-900">
+            Administrator Dashboard
+          </h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Organization-wide presence telemetry, active requests, and compliance metrics
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <Link
-            to="/employees"
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 shadow-xs transition-colors"
+        <div className="flex items-center gap-2.5">
+          <label htmlFor="dashboard-date" className="text-xs font-medium text-slate-600">
+            Target Date:
+          </label>
+          <input
+            id="dashboard-date"
+            type="date"
+            value={targetDate}
+            onChange={(e) => setTargetDate(e.target.value)}
+            className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+          />
+          <button
+            onClick={() => fetchDashboardData()}
+            disabled={isLoading}
+            className="p-1.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
+            title="Refresh dashboard"
+            aria-label="Refresh dashboard metrics"
           >
-            <PlusCircle className="w-3.5 h-3.5" />
-            Add Employee
-          </Link>
-          <Link
-            to="/attendance"
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-white border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-colors"
-          >
-            <QrCode className="w-3.5 h-3.5 text-slate-500" />
-            Attendance Console
-          </Link>
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </button>
         </div>
       </div>
 
-      {/* Summary Cards Grid */}
+      {error && (
+        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>{error}</span>
+          </div>
+          <button
+            onClick={() => fetchDashboardData()}
+            className="px-2.5 py-1 rounded bg-rose-600 text-white font-semibold hover:bg-rose-700"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* Main Metric Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <SummaryCard
-          title="Total Employees"
-          value={employeeCount !== null && employeeCount > 0 ? employeeCount : 52}
-          subtitle={employeeCount !== null && employeeCount > 0 ? 'Live database records' : 'Active workforce on roster'}
-          icon={<Users className="w-5 h-5 text-indigo-600" />}
-          iconBgColor="bg-indigo-50"
-          isDemoData={employeeCount === null || employeeCount === 0}
+          title="Active Headcount"
+          value={metrics ? metrics.total_active_employees : '—'}
+          subtitle="Registered active personnel"
+          icon={<Users className="w-5 h-5" />}
+          iconBgColor="bg-indigo-50 text-indigo-600"
         />
         <SummaryCard
-          title="Present Today"
-          value={46}
-          subtitle="88.5% office attendance"
-          icon={<UserCheck className="w-5 h-5 text-emerald-600" />}
-          iconBgColor="bg-emerald-50"
-          isDemoData={true}
+          title="Present in Office"
+          value={metrics ? metrics.present_today : '—'}
+          subtitle={`${metrics ? metrics.late_today : 0} late arrivals recorded`}
+          icon={<UserCheck className="w-5 h-5" />}
+          iconBgColor="bg-emerald-50 text-emerald-600"
         />
         <SummaryCard
-          title="Absent Today"
-          value={4}
-          subtitle="2 on approved annual leave"
-          icon={<UserX className="w-5 h-5 text-rose-600" />}
-          iconBgColor="bg-rose-50"
-          isDemoData={true}
+          title="Working From Home"
+          value={metrics ? metrics.wfh_today : '—'}
+          subtitle="Approved WFH requests"
+          icon={<Laptop className="w-5 h-5" />}
+          iconBgColor="bg-sky-50 text-sky-600"
         />
         <SummaryCard
-          title="Pending Leaves"
-          value={2}
-          subtitle="Requires supervisor review"
-          icon={<Clock className="w-5 h-5 text-amber-600" />}
-          iconBgColor="bg-amber-50"
-          isDemoData={true}
+          title="Absent / Unaccounted"
+          value={metrics ? metrics.absent_today : '—'}
+          subtitle={`${metrics ? metrics.on_leave_today : 0} on approved leave`}
+          icon={<UserX className="w-5 h-5" />}
+          iconBgColor="bg-rose-50 text-rose-600"
         />
       </div>
 
-      {/* Analytics & System Health Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <AttendanceChart />
-        </div>
-
-        {/* Live Infrastructure State */}
-        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                <Server className="w-4 h-4 text-indigo-600" />
-                Backend Telemetry
-              </h3>
-              <span className="text-[11px] text-slate-400 font-mono">FastAPI</span>
-            </div>
-
-            <div className="mt-4 space-y-3">
-              <div className="flex items-center justify-between text-xs py-1.5 border-b border-slate-50">
-                <span className="text-slate-500 flex items-center gap-1.5">
-                  <Database className="w-3.5 h-3.5 text-slate-400" /> PostgreSQL 18
+      {/* Actionable Pipeline Notifications Banner */}
+      {metrics && (metrics.pending_leave_requests > 0 || metrics.pending_wfh_requests > 0) && (
+        <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-900">
+          <div className="flex items-center gap-3">
+            <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0" />
+            <div>
+              <span className="font-bold">Pending Administrative Actions: </span>
+              {metrics.pending_leave_requests > 0 && (
+                <span className="mr-3">
+                  <strong>{metrics.pending_leave_requests}</strong> pending leave request(s)
                 </span>
-                <span
-                  className={`font-semibold ${
-                    health.databaseConnected ? 'text-emerald-700' : 'text-rose-600'
-                  }`}
-                >
-                  {health.databaseConnected ? 'Connected (Pool OK)' : 'Unavailable'}
+              )}
+              {metrics.pending_wfh_requests > 0 && (
+                <span>
+                  <strong>{metrics.pending_wfh_requests}</strong> pending WFH request(s)
                 </span>
-              </div>
-
-              <div className="flex items-center justify-between text-xs py-1.5 border-b border-slate-50">
-                <span className="text-slate-500">API Endpoint</span>
-                <span className="font-mono text-[11px] text-slate-700">http://127.0.0.1:8000</span>
-              </div>
-
-              <div className="flex items-center justify-between text-xs py-1.5 border-b border-slate-50">
-                <span className="text-slate-500">Alembic Schema</span>
-                <span className="font-mono text-[11px] text-indigo-700 font-medium">Head (dd512940ae96)</span>
-              </div>
-
-              <div className="flex items-center justify-between text-xs py-1.5">
-                <span className="text-slate-500">Health Latency</span>
-                <span className="font-mono text-slate-700">
-                  {health.latencyMs !== undefined ? `${health.latencyMs} ms` : '—'}
-                </span>
-              </div>
+              )}
             </div>
           </div>
-
-          <div className="mt-6 p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-600">
-            <div className="flex items-center gap-1.5 text-slate-800 font-medium mb-1">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              Production Foundation
-            </div>
-            <p className="text-[11px] text-slate-500">
-              PostgreSQL connection pooling, Pydantic data validation, and Alembic migrations enabled.
-            </p>
+          <div className="flex items-center gap-2">
+            {metrics.pending_leave_requests > 0 && (
+              <Link
+                to="/leave"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold transition-colors shadow-xs"
+              >
+                <span>Review Leaves</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            )}
+            {metrics.pending_wfh_requests > 0 && (
+              <Link
+                to="/wfh"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold transition-colors shadow-xs"
+              >
+                <span>Review WFH</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            )}
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Recent Attendance Activity Table */}
+      {/* Chart Section */}
+      <AttendanceChart trends={trends} isLoading={isLoading} />
+
+      {/* Recent Activity Table */}
       <RecentAttendanceTable
-        records={attendanceRecords}
-        isDemoData={isDemoData}
-        onRefresh={fetchRecords}
+        records={recentRecords}
+        isDemoData={false}
+        onRefresh={() => fetchDashboardData()}
         isLoading={isLoading}
       />
     </div>

@@ -1,73 +1,97 @@
-# React + TypeScript + Vite
+# VorldX Attendance System — Administrator Web Application
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The **VorldX Admin Web Application** is the centralized HR and security control panel for the VorldX Attendance Management System. Built with **React 19**, **TypeScript**, **Vite**, and **Tailwind CSS**, it integrates directly with the shared FastAPI backend.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features & Modules
 
-## React Compiler
+1. **Administrator Authentication & Protected Routing**:
+   - Secure Admin ID authentication (`POST /api/v1/auth/login`).
+   - Token-based session management (`localStorage` with automatic authorization header injection).
+   - Invalidation on `401 Unauthorized` token expiry.
+   - Dedicated `LoginPage` with input validation (restricts email logins to require unique Admin IDs).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+2. **Dashboard & Presence Analytics**:
+   - Live metrics from `GET /api/v1/analytics/dashboard` (Active Headcount, Present, Absent, On Leave, WFH, Late arrivals, Half-day records).
+   - Time-series attendance trends chart powered by `GET /api/v1/analytics/trends`.
+   - Date selector to inspect past or current organizational presence.
+   - Actionable banners highlighting pending leave and WFH requests.
 
-## Expanding the ESLint configuration
+3. **Employee Management**:
+   - Directory listing with department and query search (`GET /api/v1/employees`).
+   - Create new personnel (`POST /api/v1/employees`).
+   - Edit employee profile (`PUT /api/v1/employees/{id}`).
+   - Provision login credentials (`POST /api/v1/employees/{id}/account`).
+   - Activate / deactivate employee accounts (`PATCH /api/v1/employees/{id}/status`).
+   - Safe deletion protection preventing deletion of personnel with historical records (`DELETE /api/v1/employees/{id}`).
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+4. **Attendance Management**:
+   - Complete record audit with date and status filters (`GET /api/v1/attendance`).
+   - Shift duration calculation.
+   - Administrative check-in and check-out testing console.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+5. **Leave Request Management**:
+   - Status filtering: `ALL`, `PENDING`, `APPROVED`, `REJECTED`.
+   - Admin approval and rejection workflow (`PATCH /api/v1/leave/{id}/review`) with optional review notes.
+   - Administrative leave submission modal.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+6. **Work-from-Home (WFH) Management**:
+   - Status filtering: `ALL`, `PENDING`, `APPROVED`, `REJECTED`.
+   - Admin approval and rejection workflow (`PATCH /api/v1/wfh/{id}/review`).
+   - Enforces attendance isolation: WFH approvals do not create attendance check-in records.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+7. **Attendance Policy Management**:
+   - Configurable workday schedule (`work_start_time`, `work_end_time`).
+   - Punctuality parameters (`late_grace_minutes`, `early_departure_grace_minutes`).
+   - Shift thresholds (`half_day_hours_threshold`, `full_day_hours_threshold`).
+   - Automatic late arrival and early departure detection toggles.
+   - Interactive policy calculation simulation sandbox (`POST /api/v1/attendance/policy/calculate`).
+
+8. **Reports & Audit Timesheets**:
+   - Date range summary metrics (`GET /api/v1/analytics/summary`).
+   - Attendance rate, average daily attendance, and status breakdown.
+   - Real-time CSV export for HR and payroll reporting.
+
+---
+
+## Configuration & Environment Variables
+
+Create `.env` in the `admin-web` root directory:
+
+```bash
+VITE_API_BASE_URL=http://127.0.0.1:8000
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x';
-import reactDom from 'eslint-plugin-react-dom';
+## Development & Build Commands
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+```bash
+# Install dependencies
+npm install
+
+# Start local Vite development server
+npm run dev
+
+# Run TypeScript compilation and production build
+npm run build
+
+# Run ESLint validation
+npm run lint
+
+# Format code
+npm run format
 ```
+
+---
+
+## Administrator Access Procedure
+
+1. Seed the default administrator credentials using the backend seed script:
+   ```bash
+   cd ../backend
+   .\.venv\Scripts\python.exe scripts/seed_initial_data.py
+   ```
+2. Open the Admin Web app (`http://localhost:5173`).
+3. Sign in using the assigned **Admin ID** (e.g. `ADM-001`) and administrator password.

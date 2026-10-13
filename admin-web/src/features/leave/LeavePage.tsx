@@ -1,6 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Plus, RefreshCw, CheckCircle, AlertCircle, Clock } from 'lucide-react';
-import { api } from '../../services/api';
+import {
+  Plus,
+  RefreshCw,
+  CheckCircle,
+  AlertCircle,
+  Clock,
+  Check,
+  X as CloseIcon,
+  Filter,
+} from 'lucide-react';
+import { api, ApiError } from '../../services/api';
 import type { Employee, LeaveRequest } from '../../types';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 
@@ -11,8 +20,11 @@ export const LeavePage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Modal
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // Filter
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+
+  // Submit Modal
+  const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     employee_id: '',
@@ -21,12 +33,21 @@ export const LeavePage: React.FC = () => {
     reason: '',
   });
 
+  // Review Modal State
+  const [reviewingItem, setReviewingItem] = useState<{
+    id: number;
+    action: 'APPROVE' | 'REJECT';
+    employeeName: string;
+  } | null>(null);
+  const [reviewNotes, setReviewNotes] = useState('');
+  const [isReviewSubmitting, setIsReviewSubmitting] = useState(false);
+
   const loadData = async () => {
     setIsLoading(true);
     setError(null);
     try {
       const [leaveData, empData] = await Promise.all([
-        api.getLeaveRequests(),
+        api.getLeaveRequests(statusFilter === 'ALL' ? undefined : statusFilter),
         api.getEmployees(),
       ]);
       setEmployees(empData);
@@ -36,6 +57,8 @@ export const LeavePage: React.FC = () => {
         return {
           ...r,
           employee_name: emp ? emp.full_name : `Employee #${r.employee_id}`,
+          employee_code: emp ? emp.employee_code : `VX-${r.employee_id}`,
+          department: emp ? emp.department : 'General',
         };
       });
       setRequests(enriched);
@@ -48,7 +71,8 @@ export const LeavePage: React.FC = () => {
 
   useEffect(() => {
     loadData();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,31 +82,55 @@ export const LeavePage: React.FC = () => {
     setSuccess(null);
 
     try {
-      const res = await fetch(
-        `${(import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')}/api/v1/leave`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            employee_id: Number(formData.employee_id),
-            start_date: formData.start_date,
-            end_date: formData.end_date,
-            reason: formData.reason,
-          }),
-        }
-      );
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.detail || 'Failed to submit leave request');
-      }
+      await api.createLeaveRequest({
+        employee_id: Number(formData.employee_id),
+        start_date: formData.start_date,
+        end_date: formData.end_date,
+        reason: formData.reason,
+      });
       setSuccess('Leave request submitted successfully.');
-      setIsModalOpen(false);
+      setIsSubmitModalOpen(false);
       setFormData({ employee_id: '', start_date: '', end_date: '', reason: '' });
       loadData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error submitting request');
+      setError(err instanceof ApiError ? err.message : 'Error submitting request.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleOpenReview = (
+    id: number,
+    action: 'APPROVE' | 'REJECT',
+    employeeName: string
+  ) => {
+    setReviewingItem({ id, action, employeeName });
+    setReviewNotes('');
+  };
+
+  const handleExecuteReview = async () => {
+    if (!reviewingItem) return;
+    setIsReviewSubmitting(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      await api.reviewLeaveRequest(
+        reviewingItem.id,
+        reviewingItem.action,
+        reviewNotes.trim() || undefined
+      );
+      setSuccess(
+        `Leave request #${reviewingItem.id} for ${reviewingItem.employeeName} has been ${
+          reviewingItem.action === 'APPROVE' ? 'approved' : 'rejected'
+        }.`
+      );
+      setReviewingItem(null);
+      loadData();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to process leave review.');
+    } finally {
+      setIsReviewSubmitting(false);
     }
   };
 
@@ -95,7 +143,7 @@ export const LeavePage: React.FC = () => {
             Leave Requests Management
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Review, approve, and track employee absence and vacation requests
+            Review, approve, or reject employee leave and vacation requests
           </p>
         </div>
 
@@ -110,8 +158,8 @@ export const LeavePage: React.FC = () => {
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
           <button
-            onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 shadow-xs transition-colors"
+            onClick={() => setIsSubmitModalOpen(true)}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 shadow-xs transition-colors cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             Submit Leave Request
@@ -120,9 +168,9 @@ export const LeavePage: React.FC = () => {
       </div>
 
       {success && (
-        <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <CheckCircle className="w-4 h-4 text-emerald-600" />
+        <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>{success}</span>
           </div>
           <button onClick={() => setSuccess(null)} className="font-bold">×</button>
@@ -130,14 +178,30 @@ export const LeavePage: React.FC = () => {
       )}
 
       {error && (
-        <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-rose-600" />
-            <span>{error}</span>
+        <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <span className="leading-relaxed">{error}</span>
           </div>
           <button onClick={() => setError(null)} className="font-bold">×</button>
         </div>
       )}
+
+      {/* Filter Toolbar */}
+      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs flex items-center gap-3">
+        <Filter className="w-4 h-4 text-slate-400" />
+        <span className="text-xs font-semibold text-slate-700">Filter Status:</span>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+        >
+          <option value="ALL">All Requests</option>
+          <option value="PENDING">Pending Approval</option>
+          <option value="APPROVED">Approved</option>
+          <option value="REJECTED">Rejected</option>
+        </select>
+      </div>
 
       {/* Table */}
       <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
@@ -145,33 +209,73 @@ export const LeavePage: React.FC = () => {
           <table className="w-full text-left text-sm text-slate-600">
             <thead className="bg-slate-50/75 text-xs uppercase tracking-wider text-slate-500 border-b border-slate-100">
               <tr>
-                <th className="px-5 py-3.5 font-medium">Request ID</th>
+                <th className="px-5 py-3.5 font-medium">Request</th>
                 <th className="px-5 py-3.5 font-medium">Employee</th>
                 <th className="px-5 py-3.5 font-medium">Start Date</th>
                 <th className="px-5 py-3.5 font-medium">End Date</th>
                 <th className="px-5 py-3.5 font-medium">Reason</th>
                 <th className="px-5 py-3.5 font-medium">Status</th>
+                <th className="px-5 py-3.5 font-medium text-right">Review Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {requests.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center text-slate-500">
+                  <td colSpan={7} className="px-5 py-12 text-center text-slate-500">
                     <Clock className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                    <p className="text-sm font-medium text-slate-700">No leave requests recorded</p>
-                    <p className="text-xs text-slate-400">Employee leave requests will appear here for administrative review.</p>
+                    <p className="text-sm font-medium text-slate-700">No leave requests found</p>
+                    <p className="text-xs text-slate-400">
+                      Requests matching the selected filter will appear here.
+                    </p>
                   </td>
                 </tr>
               ) : (
                 requests.map((r) => (
                   <tr key={r.id} className="hover:bg-slate-50/60 transition-colors">
                     <td className="px-5 py-3.5 font-mono text-xs text-slate-500">#{r.id}</td>
-                    <td className="px-5 py-3.5 font-medium text-slate-900">{r.employee_name}</td>
+                    <td className="px-5 py-3.5 font-medium text-slate-900">
+                      <div>
+                        <div>{r.employee_name}</div>
+                        <div className="text-[11px] font-mono text-slate-400">{r.employee_code}</div>
+                      </div>
+                    </td>
                     <td className="px-5 py-3.5 text-xs text-slate-700">{r.start_date}</td>
                     <td className="px-5 py-3.5 text-xs text-slate-700">{r.end_date}</td>
-                    <td className="px-5 py-3.5 text-xs text-slate-600 max-w-xs truncate">{r.reason}</td>
+                    <td className="px-5 py-3.5 text-xs text-slate-600 max-w-xs truncate" title={r.reason}>
+                      {r.reason}
+                    </td>
                     <td className="px-5 py-3.5">
                       <StatusBadge status={r.status} size="sm" />
+                    </td>
+                    <td className="px-5 py-3.5 text-right whitespace-nowrap">
+                      {r.status === 'PENDING' ? (
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() =>
+                              handleOpenReview(r.id, 'APPROVE', r.employee_name || `Employee #${r.employee_id}`)
+                            }
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-semibold shadow-2xs"
+                            title="Approve request"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Approve</span>
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleOpenReview(r.id, 'REJECT', r.employee_name || `Employee #${r.employee_id}`)
+                            }
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-md text-xs font-semibold shadow-2xs"
+                            title="Reject request"
+                          >
+                            <CloseIcon className="w-3.5 h-3.5" />
+                            <span>Reject</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-[11px] text-slate-400 font-medium">
+                          Reviewed
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -181,18 +285,76 @@ export const LeavePage: React.FC = () => {
         </div>
       </div>
 
-      {/* Modal */}
-      {isModalOpen && (
+      {/* Review Modal */}
+      {reviewingItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-md w-full p-6">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full p-6">
+            <h3 className="text-base font-bold text-slate-900 mb-1">
+              {reviewingItem.action === 'APPROVE' ? 'Approve Leave Request' : 'Reject Leave Request'}
+            </h3>
+            <p className="text-xs text-slate-500 mb-4">
+              Leave Request #{reviewingItem.id} for <strong>{reviewingItem.employeeName}</strong>.
+            </p>
+
+            <div className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Review Notes (Optional)
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder={
+                    reviewingItem.action === 'APPROVE'
+                      ? 'e.g., Approved by team lead.'
+                      : 'e.g., Critical sprint milestone requires on-site presence.'
+                  }
+                  value={reviewNotes}
+                  onChange={(e) => setReviewNotes(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setReviewingItem(null)}
+                  className="px-3.5 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleExecuteReview}
+                  disabled={isReviewSubmitting}
+                  className={`px-4 py-2 text-white text-xs font-semibold rounded-lg disabled:opacity-50 ${
+                    reviewingItem.action === 'APPROVE'
+                      ? 'bg-emerald-600 hover:bg-emerald-700'
+                      : 'bg-rose-600 hover:bg-rose-700'
+                  }`}
+                >
+                  {isReviewSubmitting
+                    ? 'Processing...'
+                    : reviewingItem.action === 'APPROVE'
+                    ? 'Confirm Approval'
+                    : 'Confirm Rejection'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Submit Leave Request Modal */}
+      {isSubmitModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full p-6">
             <h3 className="text-base font-bold text-slate-900 mb-1">
               Submit Leave Request
             </h3>
-            <p className="text-xs text-slate-500 mb-5">
-              Create a leave request in the database.
+            <p className="text-xs text-slate-500 mb-4">
+              Record a leave request in the PostgreSQL database.
             </p>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3.5">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Employee *
@@ -201,12 +363,12 @@ export const LeavePage: React.FC = () => {
                   required
                   value={formData.employee_id}
                   onChange={(e) => setFormData({ ...formData, employee_id: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                 >
                   <option value="">Select Employee...</option>
                   {employees.map((e) => (
                     <option key={e.id} value={e.id}>
-                      {e.employee_code} — {e.full_name}
+                      {e.full_name} ({e.employee_code})
                     </option>
                   ))}
                 </select>
@@ -222,7 +384,7 @@ export const LeavePage: React.FC = () => {
                     required
                     value={formData.start_date}
                     onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                   />
                 </div>
                 <div>
@@ -234,7 +396,7 @@ export const LeavePage: React.FC = () => {
                     required
                     value={formData.end_date}
                     onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                   />
                 </div>
               </div>
@@ -246,25 +408,25 @@ export const LeavePage: React.FC = () => {
                 <textarea
                   required
                   rows={3}
-                  placeholder="Provide reason for absence..."
+                  placeholder="Detail absence justification..."
                   value={formData.reason}
                   onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                 />
               </div>
 
-              <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-50"
+                  onClick={() => setIsSubmitModalOpen(false)}
+                  className="px-3.5 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 disabled:opacity-50"
+                  className="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50"
                 >
                   {isSubmitting ? 'Submitting...' : 'Submit Request'}
                 </button>
