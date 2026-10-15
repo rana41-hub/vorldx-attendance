@@ -36,7 +36,7 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onSuccess, onCance
 
   const processCheckIn = async (sourceTag: string) => {
     if (!currentEmployee) {
-      showToast('Select an employee profile first', 'error');
+      showToast('No active employee session found', 'error');
       return;
     }
 

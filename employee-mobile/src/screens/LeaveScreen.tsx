@@ -9,16 +9,23 @@ import {
   TextInput,
   ActivityIndicator,
   RefreshControl,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { ApiService } from '../services/api';
-import type { LeaveRequest } from '../types';
+import type { LeaveRequest, LeaveStatus } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
 
 export const LeaveScreen: React.FC = () => {
   const { currentEmployee, showToast } = useApp();
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
+  const [filteredRequests, setFilteredRequests] = useState<LeaveRequest[]>([]);
+  const [selectedFilter, setSelectedFilter] = useState<'ALL' | LeaveStatus>('ALL');
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -32,6 +39,7 @@ export const LeaveScreen: React.FC = () => {
   const fetchLeaves = useCallback(async () => {
     if (!currentEmployee) {
       setRequests([]);
+      setFilteredRequests([]);
       setIsLoading(false);
       return;
     }
@@ -50,6 +58,14 @@ export const LeaveScreen: React.FC = () => {
     fetchLeaves();
   }, [fetchLeaves]);
 
+  useEffect(() => {
+    if (selectedFilter === 'ALL') {
+      setFilteredRequests(requests);
+    } else {
+      setFilteredRequests(requests.filter((r) => r.status === selectedFilter));
+    }
+  }, [requests, selectedFilter]);
+
   const openModal = () => {
     const today = new Date().toISOString().split('T')[0];
     const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
@@ -57,6 +73,13 @@ export const LeaveScreen: React.FC = () => {
     setEndDate(tomorrow);
     setReason('');
     setModalVisible(true);
+  };
+
+  const setPresetDays = (days: number) => {
+    const start = new Date();
+    const end = new Date(Date.now() + days * 86400000);
+    setStartDate(start.toISOString().split('T')[0]);
+    setEndDate(end.toISOString().split('T')[0]);
   };
 
   const handleSubmit = async () => {
@@ -75,8 +98,8 @@ export const LeaveScreen: React.FC = () => {
     try {
       await ApiService.submitLeaveRequest({
         employee_id: currentEmployee.id,
-        start_date: startDate,
-        end_date: endDate,
+        start_date: startDate.trim(),
+        end_date: endDate.trim(),
         reason: reason.trim(),
       });
       showToast('Leave request submitted successfully!', 'success');
@@ -93,7 +116,7 @@ export const LeaveScreen: React.FC = () => {
     <View style={styles.card}>
       <View style={styles.cardHeader}>
         <View style={styles.periodRow}>
-          <Ionicons name="calendar-clear-outline" size={16} color="#4F46E5" />
+          <Ionicons name="calendar-clear-outline" size={16} color="#D97706" />
           <Text style={styles.periodText}>
             {item.start_date} → {item.end_date}
           </Text>
@@ -107,10 +130,13 @@ export const LeaveScreen: React.FC = () => {
         <Text style={styles.footerDate}>
           Submitted {new Date(item.created_at).toLocaleDateString()}
         </Text>
-        <Text style={styles.reqId}>REQ #{item.id}</Text>
+        <Text style={styles.reqId}>LEAVE #{item.id}</Text>
       </View>
     </View>
   );
+
+  const pendingCount = requests.filter((r) => r.status === 'PENDING').length;
+  const approvedCount = requests.filter((r) => r.status === 'APPROVED').length;
 
   return (
     <View style={styles.container}>
@@ -118,7 +144,7 @@ export const LeaveScreen: React.FC = () => {
       <View style={styles.topInfo}>
         <View>
           <Text style={styles.title}>Time Off & Leaves</Text>
-          <Text style={styles.subtitle}>Manage leave applications and track approvals</Text>
+          <Text style={styles.subtitle}>Apply for leave and track review status</Text>
         </View>
         <TouchableOpacity style={styles.applyBtn} onPress={openModal} activeOpacity={0.8}>
           <Ionicons name="add" size={18} color="#FFFFFF" />
@@ -126,39 +152,59 @@ export const LeaveScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Leave Balances Header Cards */}
+      {/* Dynamic Summary Cards */}
       <View style={styles.balanceGrid}>
         <View style={styles.balanceCard}>
-          <Text style={styles.balanceCount}>18</Text>
-          <Text style={styles.balanceLabel}>Annual</Text>
+          <Text style={styles.balanceCount}>{pendingCount}</Text>
+          <Text style={styles.balanceLabel}>Pending</Text>
         </View>
         <View style={styles.balanceCard}>
-          <Text style={styles.balanceCount}>7</Text>
-          <Text style={styles.balanceLabel}>Casual</Text>
+          <Text style={[styles.balanceCount, { color: '#059669' }]}>{approvedCount}</Text>
+          <Text style={styles.balanceLabel}>Approved</Text>
         </View>
         <View style={styles.balanceCard}>
-          <Text style={styles.balanceCount}>10</Text>
-          <Text style={styles.balanceLabel}>Sick</Text>
+          <Text style={[styles.balanceCount, { color: '#6366F1' }]}>{requests.length}</Text>
+          <Text style={styles.balanceLabel}>Total Requests</Text>
         </View>
+      </View>
+
+      {/* Status Filter Chips */}
+      <View style={styles.filterBar}>
+        {(['ALL', 'PENDING', 'APPROVED', 'REJECTED'] as const).map((filter) => {
+          const isActive = selectedFilter === filter;
+          return (
+            <TouchableOpacity
+              key={filter}
+              style={[styles.filterChip, isActive && styles.filterChipActive]}
+              onPress={() => setSelectedFilter(filter)}
+            >
+              <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
+                {filter === 'ALL' ? 'All' : filter.charAt(0) + filter.slice(1).toLowerCase()}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4F46E5" />
+          <ActivityIndicator size="large" color="#D97706" />
         </View>
-      ) : requests.length === 0 ? (
+      ) : filteredRequests.length === 0 ? (
         <View style={styles.emptyContainer}>
           <View style={styles.emptyIcon}>
             <Ionicons name="airplane-outline" size={36} color="#94A3B8" />
           </View>
           <Text style={styles.emptyTitle}>No Leave Applications</Text>
           <Text style={styles.emptySubtitle}>
-            Tap "Apply" above to submit a new leave request for review.
+            {selectedFilter === 'ALL'
+              ? 'Tap "Apply" above to submit a new leave request for review.'
+              : `You have no ${selectedFilter.toLowerCase()} leave requests.`}
           </Text>
         </View>
       ) : (
         <FlatList
-          data={requests}
+          data={filteredRequests}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
@@ -174,75 +220,126 @@ export const LeaveScreen: React.FC = () => {
         />
       )}
 
-      {/* Apply Leave Modal */}
-      <Modal visible={modalVisible} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
+      {/* Keyboard-Aware Apply Leave Modal */}
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalOverlay}
+        >
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.modalBackdrop} />
+          </TouchableWithoutFeedback>
+
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Request Time Off</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
+              <TouchableOpacity
+                onPress={() => setModalVisible(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
                 <Ionicons name="close" size={24} color="#64748B" />
               </TouchableOpacity>
             </View>
 
-            <View style={styles.formGroup}>
-              <Text style={styles.inputLabel}>Start Date (YYYY-MM-DD)</Text>
-              <TextInput
-                style={styles.textInput}
-                value={startDate}
-                onChangeText={setStartDate}
-                placeholder="2026-10-13"
-                placeholderTextColor="#94A3B8"
-              />
-            </View>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.modalScrollContent}
+            >
+              {/* Quick Presets */}
+              <View style={styles.presetsRow}>
+                <TouchableOpacity
+                  style={styles.presetChip}
+                  onPress={() => setPresetDays(1)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.presetChipText}>Tomorrow (1d)</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.presetChip}
+                  onPress={() => setPresetDays(3)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.presetChipText}>3 Days</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.presetChip}
+                  onPress={() => setPresetDays(5)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.presetChipText}>1 Week (5d)</Text>
+                </TouchableOpacity>
+              </View>
 
-            <View style={styles.formGroup}>
-              <Text style={styles.inputLabel}>End Date (YYYY-MM-DD)</Text>
-              <TextInput
-                style={styles.textInput}
-                value={endDate}
-                onChangeText={setEndDate}
-                placeholder="2026-10-14"
-                placeholderTextColor="#94A3B8"
-              />
-            </View>
+              <View style={styles.formGroup}>
+                <Text style={styles.inputLabel}>Start Date (YYYY-MM-DD)</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={startDate}
+                  onChangeText={setStartDate}
+                  placeholder="2026-10-20"
+                  placeholderTextColor="#94A3B8"
+                  keyboardType="numbers-and-punctuation"
+                  autoCorrect={false}
+                />
+              </View>
 
-            <View style={styles.formGroup}>
-              <Text style={styles.inputLabel}>Reason for Leave</Text>
-              <TextInput
-                style={[styles.textInput, styles.textArea]}
-                value={reason}
-                onChangeText={setReason}
-                placeholder="State your reason (e.g. Personal travel, family emergency)..."
-                placeholderTextColor="#94A3B8"
-                multiline
-                numberOfLines={3}
-              />
-            </View>
+              <View style={styles.formGroup}>
+                <Text style={styles.inputLabel}>End Date (YYYY-MM-DD)</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={endDate}
+                  onChangeText={setEndDate}
+                  placeholder="2026-10-22"
+                  placeholderTextColor="#94A3B8"
+                  keyboardType="numbers-and-punctuation"
+                  autoCorrect={false}
+                />
+              </View>
 
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={styles.cancelBtn}
-                onPress={() => setModalVisible(false)}
-                disabled={isSubmitting}
-              >
-                <Text style={styles.cancelBtnText}>Cancel</Text>
-              </TouchableOpacity>
+              <View style={styles.formGroup}>
+                <Text style={styles.inputLabel}>Reason for Leave</Text>
+                <TextInput
+                  style={[styles.textInput, styles.textArea]}
+                  value={reason}
+                  onChangeText={setReason}
+                  placeholder="State your reason (e.g. Personal travel, family emergency)..."
+                  placeholderTextColor="#94A3B8"
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                />
+              </View>
 
-              <TouchableOpacity
-                style={styles.submitBtn}
-                onPress={handleSubmit}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <ActivityIndicator color="#FFFFFF" size="small" />
-                ) : (
-                  <Text style={styles.submitBtnText}>Submit Request</Text>
-                )}
-              </TouchableOpacity>
-            </View>
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.cancelBtn}
+                  onPress={() => setModalVisible(false)}
+                  disabled={isSubmitting}
+                >
+                  <Text style={styles.cancelBtnText}>Cancel</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.submitBtn, isSubmitting && styles.btnDisabled]}
+                  onPress={handleSubmit}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : (
+                    <Text style={styles.submitBtnText}>Submit Request</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -274,7 +371,7 @@ const styles = StyleSheet.create({
   applyBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#4F46E5',
+    backgroundColor: '#D97706',
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 10,
@@ -303,7 +400,7 @@ const styles = StyleSheet.create({
   balanceCount: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#4F46E5',
+    color: '#D97706',
   },
   balanceLabel: {
     fontSize: 11,
@@ -311,9 +408,37 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 2,
   },
+  filterBar: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    gap: 8,
+    marginBottom: 10,
+  },
+  filterChip: {
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  filterChipActive: {
+    backgroundColor: '#D97706',
+    borderColor: '#D97706',
+  },
+  filterChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  filterChipTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
   listContent: {
     padding: 20,
     paddingTop: 4,
+    paddingBottom: 90,
     gap: 12,
   },
   loadingContainer: {
@@ -405,23 +530,47 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
+  modalBackdrop: {
+    flex: 1,
+  },
   modalContent: {
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    padding: 24,
-    paddingBottom: 40,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    maxHeight: '90%',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '800',
     color: '#0F172A',
+  },
+  modalScrollContent: {
+    paddingBottom: 20,
+  },
+  presetsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  presetChip: {
+    backgroundColor: '#FEF3C7',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+  },
+  presetChipText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#D97706',
   },
   formGroup: {
     marginBottom: 16,
@@ -449,7 +598,7 @@ const styles = StyleSheet.create({
   modalActions: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 8,
+    marginTop: 12,
   },
   cancelBtn: {
     flex: 1,
@@ -465,10 +614,13 @@ const styles = StyleSheet.create({
   },
   submitBtn: {
     flex: 2,
-    backgroundColor: '#4F46E5',
+    backgroundColor: '#D97706',
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
+  },
+  btnDisabled: {
+    opacity: 0.6,
   },
   submitBtnText: {
     color: '#FFFFFF',

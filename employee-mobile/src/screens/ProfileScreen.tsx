@@ -6,26 +6,23 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Modal,
-  FlatList,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
-import type { Employee } from '../types';
 
 export const ProfileScreen: React.FC = () => {
   const {
     currentEmployee,
-    setCurrentEmployee,
-    employees,
+    user,
     baseUrl,
     updateBaseUrl,
     isBackendOnline,
     showToast,
+    logout,
   } = useApp();
 
   const [urlInput, setUrlInput] = useState(baseUrl);
-  const [empModalVisible, setEmpModalVisible] = useState(false);
 
   const handleSaveUrl = async () => {
     if (!urlInput.trim()) return;
@@ -37,10 +34,26 @@ export const ProfileScreen: React.FC = () => {
     }
   };
 
-  const handleSelectEmployee = (emp: Employee) => {
-    setCurrentEmployee(emp);
-    setEmpModalVisible(false);
-    showToast(`Switched active profile to ${emp.first_name} ${emp.last_name}`, 'success');
+  const handleLogoutPress = () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to end your session on this mobile device?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: async () => {
+            await logout();
+          },
+        },
+      ]
+    );
+  };
+
+  const getInitials = () => {
+    if (!currentEmployee) return 'VX';
+    return `${currentEmployee.first_name[0] || ''}${currentEmployee.last_name[0] || ''}`.toUpperCase();
   };
 
   return (
@@ -48,17 +61,13 @@ export const ProfileScreen: React.FC = () => {
       {/* Profile Header Card */}
       <View style={styles.profileCard}>
         <View style={styles.avatarLarge}>
-          <Text style={styles.avatarText}>
-            {currentEmployee
-              ? `${currentEmployee.first_name[0] || ''}${currentEmployee.last_name[0] || ''}`.toUpperCase()
-              : 'VX'}
-          </Text>
+          <Text style={styles.avatarText}>{getInitials()}</Text>
         </View>
 
         <Text style={styles.name}>
           {currentEmployee
             ? `${currentEmployee.first_name} ${currentEmployee.last_name}`
-            : 'Unassigned'}
+            : user?.full_name || 'Employee'}
         </Text>
         <Text style={styles.designation}>
           {currentEmployee?.designation || 'Staff Member'}
@@ -74,19 +83,33 @@ export const ProfileScreen: React.FC = () => {
           <View style={styles.codeBadge}>
             <Ionicons name="card-outline" size={12} color="#475569" />
             <Text style={styles.codeBadgeText}>
-              {currentEmployee?.employee_code || 'VX-0000'}
+              {currentEmployee?.employee_code || user?.employee_code || 'VX-0000'}
             </Text>
           </View>
         </View>
 
-        <TouchableOpacity
-          style={styles.switchEmpBtn}
-          onPress={() => setEmpModalVisible(true)}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="swap-horizontal" size={16} color="#4F46E5" />
-          <Text style={styles.switchEmpBtnText}>Switch Employee Account</Text>
-        </TouchableOpacity>
+        {/* Account Details Box */}
+        <View style={styles.detailsBox}>
+          <View style={styles.detailItem}>
+            <Text style={styles.detailKey}>Email Address</Text>
+            <Text style={styles.detailValue}>
+              {user?.email || 'Not available'}
+            </Text>
+          </View>
+          {currentEmployee?.phone && (
+            <View style={styles.detailItem}>
+              <Text style={styles.detailKey}>Contact Phone</Text>
+              <Text style={styles.detailValue}>{currentEmployee.phone}</Text>
+            </View>
+          )}
+          <View style={styles.detailItem}>
+            <Text style={styles.detailKey}>Account Status</Text>
+            <View style={styles.activePill}>
+              <View style={styles.activeDot} />
+              <Text style={styles.activeText}>Active & Verified</Text>
+            </View>
+          </View>
+        </View>
       </View>
 
       {/* Backend & Server Configuration */}
@@ -96,11 +119,11 @@ export const ProfileScreen: React.FC = () => {
           <Text style={styles.cardTitle}>Backend API Configuration</Text>
         </View>
         <Text style={styles.cardDesc}>
-          Ensure this points to the FastAPI service running on your machine.
+          Ensure this points to the FastAPI service running on your machine or network.
         </Text>
 
         <View style={styles.statusRow}>
-          <Text style={styles.statusLabel}>Server Status:</Text>
+          <Text style={styles.statusLabel}>Server Connection:</Text>
           <View style={styles.statusIndicator}>
             <View
               style={[
@@ -133,6 +156,12 @@ export const ProfileScreen: React.FC = () => {
         {/* Quick Presets */}
         <View style={styles.presetsRow}>
           <TouchableOpacity
+            style={[styles.presetPill, { backgroundColor: '#EEF2FF', borderWidth: 1, borderColor: '#4F46E5' }]}
+            onPress={() => setUrlInput('http://172.20.10.2:8000')}
+          >
+            <Text style={[styles.presetText, { color: '#4F46E5', fontWeight: '700' }]}>★ Wi-Fi/Hotspot (172.20.10.2)</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             style={styles.presetPill}
             onPress={() => setUrlInput('http://127.0.0.1:8000')}
           >
@@ -162,8 +191,8 @@ export const ProfileScreen: React.FC = () => {
           <Text style={styles.infoVal}>1.0.0 (Expo SDK 57)</Text>
         </View>
         <View style={styles.infoRow}>
-          <Text style={styles.infoKey}>Database</Text>
-          <Text style={styles.infoVal}>PostgreSQL 18</Text>
+          <Text style={styles.infoKey}>Session Role</Text>
+          <Text style={styles.infoVal}>{user?.role || 'EMPLOYEE'}</Text>
         </View>
         <View style={styles.infoRow}>
           <Text style={styles.infoKey}>Backend Framework</Text>
@@ -171,52 +200,15 @@ export const ProfileScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* Employee Switcher Modal */}
-      <Modal visible={empModalVisible} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Test Employee</Text>
-              <TouchableOpacity onPress={() => setEmpModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#64748B" />
-              </TouchableOpacity>
-            </View>
-
-            <FlatList
-              data={employees}
-              keyExtractor={(item) => item.id.toString()}
-              contentContainerStyle={styles.empList}
-              renderItem={({ item }) => {
-                const isSelected = item.id === currentEmployee?.id;
-                return (
-                  <TouchableOpacity
-                    style={[styles.empItem, isSelected && styles.empItemSelected]}
-                    onPress={() => handleSelectEmployee(item)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.empAvatarSmall}>
-                      <Text style={styles.empAvatarText}>
-                        {`${item.first_name[0] || ''}${item.last_name[0] || ''}`.toUpperCase()}
-                      </Text>
-                    </View>
-                    <View style={styles.empItemInfo}>
-                      <Text style={styles.empItemName}>
-                        {item.first_name} {item.last_name}
-                      </Text>
-                      <Text style={styles.empItemSub}>
-                        {item.department} • {item.employee_code}
-                      </Text>
-                    </View>
-                    {isSelected && (
-                      <Ionicons name="checkmark-circle" size={20} color="#4F46E5" />
-                    )}
-                  </TouchableOpacity>
-                );
-              }}
-            />
-          </View>
-        </View>
-      </Modal>
+      {/* Logout Button */}
+      <TouchableOpacity
+        style={styles.logoutBtn}
+        onPress={handleLogoutPress}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="log-out-outline" size={20} color="#DC2626" />
+        <Text style={styles.logoutBtnText}>Sign Out from Device</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 };
@@ -306,22 +298,50 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#475569',
   },
-  switchEmpBtn: {
+  detailsBox: {
+    width: '100%',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    padding: 14,
+    marginTop: 18,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  detailItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  detailKey: {
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  detailValue: {
+    fontSize: 12,
+    color: '#0F172A',
+    fontWeight: '700',
+  },
+  activePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginTop: 18,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    gap: 5,
+    backgroundColor: '#ECFDF5',
+    paddingVertical: 2,
+    paddingHorizontal: 8,
     borderRadius: 12,
-    backgroundColor: '#EEF2FF',
-    borderWidth: 1,
-    borderColor: '#C7D2FE',
   },
-  switchEmpBtnText: {
-    fontSize: 12,
+  activeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10B981',
+  },
+  activeText: {
+    fontSize: 11,
     fontWeight: '700',
-    color: '#4F46E5',
+    color: '#065F46',
   },
   configCard: {
     backgroundColor: '#FFFFFF',
@@ -445,71 +465,21 @@ const styles = StyleSheet.create({
     color: '#0F172A',
     fontWeight: '700',
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    maxHeight: '80%',
-  },
-  modalHeader: {
+  logoutBtn: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  empList: {
-    gap: 8,
-    paddingBottom: 30,
-  },
-  empItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    gap: 12,
-  },
-  empItemSelected: {
-    borderColor: '#4F46E5',
-    backgroundColor: '#EEF2FF',
-  },
-  empAvatarSmall: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#4F46E5',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 14,
+    paddingVertical: 14,
+    gap: 8,
+    marginTop: 4,
   },
-  empAvatarText: {
-    color: '#FFFFFF',
+  logoutBtnText: {
+    color: '#DC2626',
     fontWeight: '700',
-    fontSize: 13,
-  },
-  empItemInfo: {
-    flex: 1,
-  },
-  empItemName: {
     fontSize: 14,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  empItemSub: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 2,
   },
 });

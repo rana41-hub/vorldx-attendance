@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-export type TabType = 'home' | 'scanner' | 'history' | 'leave' | 'profile';
+export type TabType = 'home' | 'history' | 'wfh' | 'leave' | 'profile' | 'scanner';
 
 interface BottomNavProps {
   currentTab: TabType;
@@ -42,15 +42,19 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onSelectTab })
         </Text>
       </TouchableOpacity>
 
-      {/* Floating Center Scanner Button */}
       <TouchableOpacity
-        style={styles.floatingCenterBtn}
-        onPress={() => onSelectTab('scanner')}
-        activeOpacity={0.85}
+        style={styles.tabItem}
+        onPress={() => onSelectTab('wfh')}
+        activeOpacity={0.7}
       >
-        <View style={styles.floatingInner}>
-          <Ionicons name="qr-code" size={26} color="#FFFFFF" />
-        </View>
+        <Ionicons
+          name={currentTab === 'wfh' ? 'desktop' : 'desktop-outline'}
+          size={22}
+          color={currentTab === 'wfh' ? '#0D9488' : '#94A3B8'}
+        />
+        <Text style={[styles.tabLabel, currentTab === 'wfh' && styles.tabLabelActiveWFH]}>
+          WFH
+        </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -61,9 +65,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onSelectTab })
         <Ionicons
           name={currentTab === 'leave' ? 'calendar' : 'calendar-outline'}
           size={22}
-          color={currentTab === 'leave' ? '#4F46E5' : '#94A3B8'}
+          color={currentTab === 'leave' ? '#D97706' : '#94A3B8'}
         />
-        <Text style={[styles.tabLabel, currentTab === 'leave' && styles.tabLabelActive]}>
+        <Text style={[styles.tabLabel, currentTab === 'leave' && styles.tabLabelActiveLeave]}>
           Leave
         </Text>
       </TouchableOpacity>
@@ -89,13 +93,13 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onSelectTab })
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    height: 70,
+    height: 68,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'space-around',
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingBottom: 6,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: -3 },
@@ -107,7 +111,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
+    gap: 3,
   },
   tabLabel: {
     fontSize: 11,
@@ -118,24 +122,12 @@ const styles = StyleSheet.create({
     color: '#4F46E5',
     fontWeight: '700',
   },
-  floatingCenterBtn: {
-    top: -16,
-    alignItems: 'center',
-    justifyContent: 'center',
+  tabLabelActiveWFH: {
+    color: '#0D9488',
+    fontWeight: '700',
   },
-  floatingInner: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#4F46E5',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#4F46E5',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 6,
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
+  tabLabelActiveLeave: {
+    color: '#D97706',
+    fontWeight: '700',
   },
 });

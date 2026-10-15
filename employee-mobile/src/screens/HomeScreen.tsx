@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,9 +11,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { StatusBadge } from '../components/StatusBadge';
 import { ApiService } from '../services/api';
+import { formatTime, formatDuration } from '../utils/formatters';
 
 interface HomeScreenProps {
-  onNavigateTab: (tab: 'scanner' | 'history' | 'leave' | 'profile') => void;
+  onNavigateTab: (tab: 'home' | 'scanner' | 'history' | 'leave' | 'wfh' | 'profile') => void;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
@@ -27,13 +28,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
 
   const [currentTime, setCurrentTime] = useState<string>('');
   const [currentDateStr, setCurrentDateStr] = useState<string>('');
+  const [liveDuration, setLiveDuration] = useState<string>('0m');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [stats, setStats] = useState({
     presentDays: 0,
     leaveCount: 0,
+    wfhCount: 0,
   });
 
-  // Keep live time updated
+  // Keep live time and working duration updated
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
@@ -48,35 +51,46 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
           day: 'numeric',
         })
       );
+
+      // If checked in and shift is in progress, update duration live
+      if (todayRecord && !todayRecord.check_out) {
+        setLiveDuration(formatDuration(todayRecord.check_in, null));
+      } else if (todayRecord && todayRecord.check_out) {
+        setLiveDuration(formatDuration(todayRecord.check_in, todayRecord.check_out));
+      }
     };
+
     updateTime();
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [todayRecord]);
 
-  // Fetch month stats
+  // Fetch real employee stats (attendance days, pending leaves, pending WFH)
+  const loadStats = useCallback(async () => {
+    if (!currentEmployee) return;
+    try {
+      const [att, leaves, wfh] = await Promise.all([
+        ApiService.getAttendance(currentEmployee.id),
+        ApiService.getLeaveRequests(currentEmployee.id),
+        ApiService.getWFHRequests(currentEmployee.id),
+      ]);
+      setStats({
+        presentDays: att.length,
+        leaveCount: leaves.filter((l) => l.status === 'PENDING').length,
+        wfhCount: wfh.filter((w) => w.status === 'PENDING').length,
+      });
+    } catch {
+      // In offline mode or error, keep existing state
+    }
+  }, [currentEmployee]);
+
   useEffect(() => {
-    const loadStats = async () => {
-      if (!currentEmployee) return;
-      try {
-        const [att, leaves] = await Promise.all([
-          ApiService.getAttendance(currentEmployee.id),
-          ApiService.getLeaveRequests(currentEmployee.id),
-        ]);
-        setStats({
-          presentDays: att.length,
-          leaveCount: leaves.filter((l) => l.status === 'PENDING').length,
-        });
-      } catch {
-        // Fallback
-      }
-    };
     loadStats();
-  }, [currentEmployee, todayRecord]);
+  }, [loadStats, todayRecord]);
 
-  const handleSimulateCheckIn = async (source: string = 'OFFICE_QR') => {
+  const handleQuickCheckIn = async (source: string = 'OFFICE_STATION') => {
     if (!currentEmployee) {
-      showToast('Select an employee first', 'error');
+      showToast('No active employee session found', 'error');
       return;
     }
     setIsSubmitting(true);
@@ -84,6 +98,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
       await ApiService.checkIn(currentEmployee.id, source);
       showToast(`Check-in recorded successfully via ${source}!`, 'success');
       await refreshTodayStatus();
+      await loadStats();
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Check-in failed', 'error');
     } finally {
@@ -96,8 +111,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
     setIsSubmitting(true);
     try {
       await ApiService.checkOut(currentEmployee.id);
-      showToast('Check-out logged successfully. Have a great day!', 'success');
+      showToast('Check-out logged successfully. Shift completed!', 'success');
       await refreshTodayStatus();
+      await loadStats();
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Check-out failed', 'error');
     } finally {
@@ -105,20 +121,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
     }
   };
 
-  const formatTimeOnly = (isoString?: string | null) => {
-    if (!isoString) return '--:--';
-    const d = new Date(isoString);
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const computeDuration = (inIso?: string, outIso?: string | null) => {
-    if (!inIso) return '0 hrs';
-    const start = new Date(inIso).getTime();
-    const end = outIso ? new Date(outIso).getTime() : Date.now();
-    const diffMin = Math.max(0, Math.floor((end - start) / 60000));
-    const hours = Math.floor(diffMin / 60);
-    const mins = diffMin % 60;
-    return `${hours}h ${mins}m`;
+  const handleQuickScanPress = () => {
+    if (!todayRecord) {
+      onNavigateTab('scanner');
+    } else if (!todayRecord.check_out) {
+      showToast('You are already checked in. Tap "Record Check-Out" when leaving.', 'info');
+    } else {
+      showToast('Your attendance has already been finalized for today.', 'info');
+    }
   };
 
   return (
@@ -131,7 +141,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
         </View>
         <TouchableOpacity
           style={styles.refreshBtn}
-          onPress={refreshTodayStatus}
+          onPress={() => {
+            refreshTodayStatus();
+            loadStats();
+          }}
           activeOpacity={0.7}
         >
           <Ionicons name="refresh" size={18} color="#4F46E5" />
@@ -142,7 +155,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
       <View style={styles.heroCard}>
         <View style={styles.heroHeader}>
           <View style={styles.heroTag}>
-            <Ionicons name="shield-checkmark" size={14} color="#4F46E5" />
+            <Ionicons name="shield-checkmark" size={16} color="#4F46E5" />
             <Text style={styles.heroTagText}>Today's Presence</Text>
           </View>
           {todayRecord ? (
@@ -158,7 +171,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
               <View style={styles.timeBlock}>
                 <Text style={styles.timeBlockLabel}>CHECK IN</Text>
                 <Text style={styles.timeBlockValue}>
-                  {formatTimeOnly(todayRecord.check_in)}
+                  {formatTime(todayRecord.check_in)}
                 </Text>
                 <Text style={styles.timeBlockSource}>{todayRecord.source}</Text>
               </View>
@@ -166,75 +179,104 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
               <View style={styles.durationDivider}>
                 <Ionicons name="arrow-forward" size={16} color="#9CA3AF" />
                 <Text style={styles.durationText}>
-                  {computeDuration(todayRecord.check_in, todayRecord.check_out)}
+                  {liveDuration}
+                </Text>
+                <Text style={styles.durationSubText}>
+                  {todayRecord.check_out ? 'Final' : 'Live'}
                 </Text>
               </View>
 
               <View style={styles.timeBlock}>
                 <Text style={styles.timeBlockLabel}>CHECK OUT</Text>
                 <Text style={styles.timeBlockValue}>
-                  {formatTimeOnly(todayRecord.check_out)}
+                  {todayRecord.check_out ? formatTime(todayRecord.check_out) : '--:--'}
                 </Text>
                 <Text style={styles.timeBlockSource}>
-                  {todayRecord.check_out ? 'Completed' : 'Pending'}
+                  {todayRecord.check_out ? 'Completed' : 'In Progress'}
                 </Text>
               </View>
             </View>
 
+            {/* Attendance Action Button Section */}
             {!todayRecord.check_out ? (
-              <TouchableOpacity
-                style={[styles.checkoutBtn, isSubmitting && styles.btnDisabled]}
-                onPress={handleCheckOut}
-                disabled={isSubmitting}
-                activeOpacity={0.8}
-              >
-                {isSubmitting ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <>
-                    <Ionicons name="log-out-outline" size={20} color="#FFFFFF" />
-                    <Text style={styles.checkoutBtnText}>Record Check-Out</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            ) : (
-              <View style={styles.completedNotice}>
-                <Ionicons name="checkmark-done-circle" size={20} color="#10B981" />
-                <Text style={styles.completedText}>
-                  Office day marked complete for today.
+              <View style={styles.actionContainer}>
+                <TouchableOpacity
+                  style={[styles.checkoutBtn, isSubmitting && styles.btnDisabled]}
+                  onPress={handleCheckOut}
+                  disabled={isSubmitting}
+                  activeOpacity={0.8}
+                >
+                  {isSubmitting ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : (
+                    <>
+                      <Ionicons name="log-out-outline" size={20} color="#FFFFFF" />
+                      <Text style={styles.checkoutBtnText}>Record Check-Out</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+                <Text style={styles.actionHelperText}>
+                  Shift in progress ({liveDuration} elapsed). Tap above when ending your workday.
                 </Text>
+              </View>
+            ) : (
+              <View style={styles.completedContainer}>
+                <View style={styles.completedNotice}>
+                  <Ionicons name="checkmark-done-circle" size={20} color="#10B981" />
+                  <Text style={styles.completedText}>
+                    Office day marked complete for today.
+                  </Text>
+                </View>
+
+                {/* Finalized Action Banner */}
+                <View style={styles.finalizedActionBar}>
+                  <Ionicons name="lock-closed" size={16} color="#059669" />
+                  <Text style={styles.finalizedActionText}>
+                    Shift Finalized ({formatDuration(todayRecord.check_in, todayRecord.check_out)} total)
+                  </Text>
+                </View>
+
+                {/* Explanation text */}
+                <View style={styles.completedExplanation}>
+                  <Text style={styles.completedExplanationText}>
+                    Both check-in ({formatTime(todayRecord.check_in)}) and check-out ({formatTime(todayRecord.check_out)}) are recorded. Daily shift is complete. Next check-in opens tomorrow.
+                  </Text>
+                </View>
               </View>
             )}
           </View>
         ) : (
           <View style={styles.unmarkedBox}>
-            <Text style={styles.unmarkedTitle}>Not Checked In Yet</Text>
+            <Text style={styles.unmarkedTitle}>Not Checked In Today</Text>
             <Text style={styles.unmarkedSubtitle}>
-              Scan the official office QR code at the entrance or run an instant check-in.
+              You have not recorded attendance yet today. Check in using the official QR code or workstation button below.
             </Text>
 
+            {/* Primary Check-In Action Button */}
             <TouchableOpacity
-              style={styles.scanHeroBtn}
+              style={[styles.primaryCheckinBtn, isSubmitting && styles.btnDisabled]}
               onPress={() => onNavigateTab('scanner')}
+              disabled={isSubmitting}
               activeOpacity={0.85}
             >
               <Ionicons name="qr-code-outline" size={22} color="#FFFFFF" />
-              <Text style={styles.scanHeroBtnText}>Open QR Scanner</Text>
+              <Text style={styles.primaryCheckinBtnText}>Check In (Scan Office QR)</Text>
             </TouchableOpacity>
 
+            {/* Secondary Instant Station Check-In Button */}
             <TouchableOpacity
-              style={[styles.simulateBtn, isSubmitting && styles.btnDisabled]}
-              onPress={() => handleSimulateCheckIn('OFFICE_QR_HQ')}
+              style={[styles.secondaryCheckinBtn, isSubmitting && styles.btnDisabled]}
+              onPress={() => handleQuickCheckIn('OFFICE_STATION')}
               disabled={isSubmitting}
               activeOpacity={0.7}
             >
               {isSubmitting ? (
-                <ActivityIndicator color="#4F46E5" />
+                <ActivityIndicator color="#4F46E5" size="small" />
               ) : (
                 <>
                   <Ionicons name="flash-outline" size={16} color="#4F46E5" />
-                  <Text style={styles.simulateBtnText}>
-                    Quick Simulate HQ Check-In
+                  <Text style={styles.secondaryCheckinBtnText}>
+                    Instant Station Check-In
                   </Text>
                 </>
               )}
@@ -243,23 +285,43 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
         )}
       </View>
 
-      {/* Overview Stats */}
-      <View style={styles.statsRow}>
-        <View style={styles.statCard}>
+      {/* Overview Stats (4 Cards) */}
+      <View style={styles.statsGrid}>
+        <TouchableOpacity
+          style={styles.statCard}
+          onPress={() => onNavigateTab('history')}
+          activeOpacity={0.7}
+        >
           <View style={[styles.statIcon, { backgroundColor: '#EEF2FF' }]}>
-            <Ionicons name="calendar-outline" size={20} color="#4F46E5" />
+            <Ionicons name="calendar-outline" size={18} color="#4F46E5" />
           </View>
           <Text style={styles.statVal}>{stats.presentDays}</Text>
           <Text style={styles.statTitle}>Days Logged</Text>
-        </View>
+        </TouchableOpacity>
 
-        <View style={styles.statCard}>
+        <TouchableOpacity
+          style={styles.statCard}
+          onPress={() => onNavigateTab('leave')}
+          activeOpacity={0.7}
+        >
           <View style={[styles.statIcon, { backgroundColor: '#FEF3C7' }]}>
-            <Ionicons name="time-outline" size={20} color="#D97706" />
+            <Ionicons name="airplane-outline" size={18} color="#D97706" />
           </View>
           <Text style={styles.statVal}>{stats.leaveCount}</Text>
           <Text style={styles.statTitle}>Pending Leaves</Text>
-        </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.statCard}
+          onPress={() => onNavigateTab('wfh')}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.statIcon, { backgroundColor: '#F0FDFA' }]}>
+            <Ionicons name="home-outline" size={18} color="#0D9488" />
+          </View>
+          <Text style={styles.statVal}>{stats.wfhCount}</Text>
+          <Text style={styles.statTitle}>Pending WFH</Text>
+        </TouchableOpacity>
 
         <View style={styles.statCard}>
           <View
@@ -270,7 +332,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
           >
             <Ionicons
               name={isBackendOnline ? 'cloud-done-outline' : 'cloud-offline-outline'}
-              size={20}
+              size={18}
               color={isBackendOnline ? '#059669' : '#DC2626'}
             />
           </View>
@@ -286,7 +348,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
       <View style={styles.shortcutsGrid}>
         <TouchableOpacity
           style={styles.actionItem}
-          onPress={() => onNavigateTab('scanner')}
+          onPress={handleQuickScanPress}
           activeOpacity={0.7}
         >
           <View style={[styles.actionIcon, { backgroundColor: '#EEF2FF' }]}>
@@ -302,10 +364,22 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
           activeOpacity={0.7}
         >
           <View style={[styles.actionIcon, { backgroundColor: '#FEF3C7' }]}>
-            <Ionicons name="document-text-outline" size={22} color="#D97706" />
+            <Ionicons name="calendar-clear-outline" size={22} color="#D97706" />
           </View>
           <Text style={styles.actionLabel}>Apply Leave</Text>
           <Text style={styles.actionDesc}>Vacation / Sick</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.actionItem}
+          onPress={() => onNavigateTab('wfh')}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.actionIcon, { backgroundColor: '#F0FDFA' }]}>
+            <Ionicons name="desktop-outline" size={22} color="#0D9488" />
+          </View>
+          <Text style={styles.actionLabel}>Request WFH</Text>
+          <Text style={styles.actionDesc}>Remote work days</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -319,18 +393,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
           <Text style={styles.actionLabel}>Attendance</Text>
           <Text style={styles.actionDesc}>Past records</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.actionItem}
-          onPress={() => onNavigateTab('profile')}
-          activeOpacity={0.7}
-        >
-          <View style={[styles.actionIcon, { backgroundColor: '#F3E8FF' }]}>
-            <Ionicons name="settings-outline" size={22} color="#9333EA" />
-          </View>
-          <Text style={styles.actionLabel}>Config</Text>
-          <Text style={styles.actionDesc}>API & Profile</Text>
-        </TouchableOpacity>
       </View>
     </ScrollView>
   );
@@ -343,7 +405,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 90,
   },
   timeCard: {
     flexDirection: 'row',
@@ -440,9 +502,18 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   durationText: {
-    fontSize: 11,
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#4F46E5',
+  },
+  durationSubText: {
+    fontSize: 9,
+    color: '#94A3B8',
+    textTransform: 'uppercase',
     fontWeight: '600',
-    color: '#475569',
+  },
+  actionContainer: {
+    gap: 8,
   },
   checkoutBtn: {
     flexDirection: 'row',
@@ -463,6 +534,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 15,
   },
+  actionHelperText: {
+    fontSize: 11,
+    color: '#64748B',
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  completedContainer: {
+    gap: 8,
+  },
   completedNotice: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -479,13 +559,43 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 13,
   },
+  finalizedActionBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F0FDF4',
+    borderRadius: 10,
+    paddingVertical: 10,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: '#DCFCE7',
+  },
+  finalizedActionText: {
+    color: '#166534',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  completedExplanation: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  completedExplanationText: {
+    color: '#64748B',
+    fontSize: 11,
+    textAlign: 'center',
+    lineHeight: 16,
+  },
   unmarkedBox: {
     alignItems: 'center',
     paddingVertical: 10,
   },
   unmarkedTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#0F172A',
     marginBottom: 6,
   },
@@ -494,10 +604,10 @@ const styles = StyleSheet.create({
     color: '#64748B',
     textAlign: 'center',
     lineHeight: 18,
-    marginBottom: 20,
+    marginBottom: 18,
     paddingHorizontal: 10,
   },
-  scanHeroBtn: {
+  primaryCheckinBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -513,12 +623,12 @@ const styles = StyleSheet.create({
     elevation: 4,
     marginBottom: 10,
   },
-  scanHeroBtnText: {
+  primaryCheckinBtnText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
   },
-  simulateBtn: {
+  secondaryCheckinBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -530,7 +640,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#C7D2FE',
   },
-  simulateBtnText: {
+  secondaryCheckinBtnText: {
     color: '#4F46E5',
     fontSize: 13,
     fontWeight: '600',
@@ -538,13 +648,14 @@ const styles = StyleSheet.create({
   btnDisabled: {
     opacity: 0.6,
   },
-  statsRow: {
+  statsGrid: {
     flexDirection: 'row',
-    gap: 12,
+    flexWrap: 'wrap',
+    gap: 10,
     marginBottom: 24,
   },
   statCard: {
-    flex: 1,
+    width: '48%',
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 14,

@@ -13,6 +13,8 @@ import { ApiService } from '../services/api';
 import type { AttendanceRecord } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
 
+import { formatTime, formatDuration } from '../utils/formatters';
+
 export const HistoryScreen: React.FC = () => {
   const { currentEmployee } = useApp();
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
@@ -45,23 +47,6 @@ export const HistoryScreen: React.FC = () => {
     fetchHistory();
   };
 
-  const formatDateTime = (iso?: string | null) => {
-    if (!iso) return '--:--';
-    const d = new Date(iso);
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const computeDuration = (inIso?: string, outIso?: string | null) => {
-    if (!inIso) return '-';
-    if (!outIso) return 'In Progress';
-    const start = new Date(inIso).getTime();
-    const end = new Date(outIso).getTime();
-    const diffMin = Math.max(0, Math.floor((end - start) / 60000));
-    const hours = Math.floor(diffMin / 60);
-    const mins = diffMin % 60;
-    return `${hours}h ${mins}m`;
-  };
-
   const renderItem = ({ item }: { item: AttendanceRecord }) => (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
@@ -75,7 +60,7 @@ export const HistoryScreen: React.FC = () => {
       <View style={styles.timesContainer}>
         <View style={styles.timeCol}>
           <Text style={styles.timeLabel}>Check-In</Text>
-          <Text style={styles.timeValue}>{formatDateTime(item.check_in)}</Text>
+          <Text style={styles.timeValue}>{formatTime(item.check_in)}</Text>
         </View>
 
         <View style={styles.divider}>
@@ -84,13 +69,13 @@ export const HistoryScreen: React.FC = () => {
 
         <View style={styles.timeCol}>
           <Text style={styles.timeLabel}>Check-Out</Text>
-          <Text style={styles.timeValue}>{formatDateTime(item.check_out)}</Text>
+          <Text style={styles.timeValue}>{item.check_out ? formatTime(item.check_out) : 'Pending'}</Text>
         </View>
 
         <View style={styles.durationBadge}>
           <Text style={styles.durationLabel}>Total</Text>
           <Text style={styles.durationValue}>
-            {computeDuration(item.check_in, item.check_out)}
+            {formatDuration(item.check_in, item.check_out, false)}
           </Text>
         </View>
       </View>
@@ -163,6 +148,7 @@ const styles = StyleSheet.create({
   listContent: {
     padding: 20,
     paddingTop: 8,
+    paddingBottom: 90,
     gap: 12,
   },
   loadingContainer: {
