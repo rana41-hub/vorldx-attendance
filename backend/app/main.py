@@ -32,13 +32,20 @@ app = FastAPI(
 )
 
 # CORS Configuration
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.allowed_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+cors_config = {
+    "allow_origins": settings.allowed_origins,
+    "allow_credentials": True,
+    "allow_methods": ["*"],
+    "allow_headers": ["*"],
+}
+
+# In local development mode, permit private LAN origins (192.168.x.x, 10.x.x.x, 172.16-31.x.x, localhost)
+if settings.ENVIRONMENT == "development":
+    cors_config["allow_origin_regex"] = (
+        r"^https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+)(:\d+)?$"
+    )
+
+app.add_middleware(CORSMiddleware, **cors_config)
 
 # Include API v1 routes
 app.include_router(api_v1_router)

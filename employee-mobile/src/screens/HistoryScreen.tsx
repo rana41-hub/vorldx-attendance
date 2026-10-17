@@ -6,6 +6,8 @@ import {
   FlatList,
   RefreshControl,
   ActivityIndicator,
+  AppState,
+  type AppStateStatus,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
@@ -40,6 +42,17 @@ export const HistoryScreen: React.FC = () => {
 
   useEffect(() => {
     fetchHistory();
+  }, [fetchHistory]);
+
+  // Foreground sync: reload history when returning to app
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') {
+        fetchHistory();
+      }
+    };
+    const sub = AppState.addEventListener('change', handleAppStateChange);
+    return () => sub.remove();
   }, [fetchHistory]);
 
   const handleRefresh = () => {

@@ -15,8 +15,24 @@ import type {
   WFHRequest,
 } from '../types';
 
-const BASE_URL =
-  (import.meta.env.VITE_API_BASE_URL as string) || 'http://127.0.0.1:8000';
+function resolveApiBaseUrl(): string {
+  const envUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
+  if (envUrl && envUrl.trim()) {
+    return envUrl.trim().replace(/\/+$/, '');
+  }
+  // Dynamic host fallback: When accessing admin-web over LAN (e.g. from mobile browser or tablet),
+  // automatically target the same host on backend port 8000 instead of hardcoded 127.0.0.1.
+  if (typeof window !== 'undefined' && window.location?.hostname) {
+    const host = window.location.hostname;
+    if (host !== 'localhost' && host !== '127.0.0.1') {
+      const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+      return `${protocol}//${host}:8000`;
+    }
+  }
+  return 'http://127.0.0.1:8000';
+}
+
+const BASE_URL = resolveApiBaseUrl();
 
 const TOKEN_KEY = 'vorldx_admin_token';
 const USER_KEY = 'vorldx_admin_user';

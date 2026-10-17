@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { AppState, type AppStateStatus } from 'react-native';
 import { ApiService } from '../services/api';
 import type { AttendanceRecord, Employee, UserAuthProfile } from '../types';
 
@@ -176,6 +177,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       refreshTodayStatus();
     }
   }, [currentEmployee, refreshTodayStatus]);
+
+  // Foreground sync: Automatically refresh attendance & health when app returns to active state
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') {
+        checkServerStatus();
+        if (currentEmployee) {
+          refreshTodayStatus();
+        }
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => {
+      subscription.remove();
+    };
+  }, [checkServerStatus, currentEmployee, refreshTodayStatus]);
 
   return (
     <AppContext.Provider

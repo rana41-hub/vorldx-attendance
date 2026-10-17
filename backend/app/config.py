@@ -18,6 +18,9 @@ class Settings(BaseSettings):
         default="http://localhost:5173,http://127.0.0.1:5173"
     )
 
+    # Timezone configuration (default UTC, configurable for organization local timezone)
+    ORGANIZATION_TIMEZONE: str = Field(default="UTC")
+
     # JWT Authentication configuration
     JWT_SECRET_KEY: str = Field(
         default="change-this-in-production-use-a-strong-secret-key"

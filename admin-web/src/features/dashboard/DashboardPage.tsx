@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Users,
   UserCheck,
@@ -33,51 +33,83 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
     new Date().toISOString().split('T')[0]
   );
   const [isLoading, setIsLoading] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
 
-  const fetchDashboardData = useCallback(async (dateStr?: string) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const activeDate = dateStr || targetDate;
-      const [dashData, trendsData, attendanceLogs, employees] = await Promise.all([
-        api.getDashboardMetrics(activeDate),
-        api.getAttendanceTrends(),
-        api.getAttendance(activeDate),
-        api.getEmployees(),
-      ]);
+  const isFetchingRef = useRef(false);
 
-      setMetrics(dashData);
-      setTrends(trendsData.trends || []);
+  const fetchDashboardData = useCallback(
+    async (dateStr?: string, isSilent = false) => {
+      if (isFetchingRef.current) return;
+      isFetchingRef.current = true;
 
-      const employeeMap = new Map(employees.map((e) => [e.id, e]));
-      const enrichedRecords = (attendanceLogs || []).map((r) => {
-        const emp = employeeMap.get(r.employee_id);
-        return {
-          ...r,
-          employee_name: emp ? emp.full_name : `Employee #${r.employee_id}`,
-          employee_code: emp ? emp.employee_code : `VX-${r.employee_id}`,
-          department: emp ? emp.department : 'General',
-        };
-      });
-
-      setRecentRecords(enrichedRecords);
-    } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message);
-      } else if (err instanceof Error) {
-        setError(err.message);
+      if (!isSilent) {
+        setIsLoading(true);
       } else {
-        setError('Failed to retrieve dashboard metrics.');
+        setIsSyncing(true);
       }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [targetDate]);
+      setError(null);
+
+      try {
+        const activeDate = dateStr || targetDate;
+        const [dashData, trendsData, attendanceLogs, employees] = await Promise.all([
+          api.getDashboardMetrics(activeDate),
+          api.getAttendanceTrends(),
+          api.getAttendance(activeDate),
+          api.getEmployees(),
+        ]);
+
+        setMetrics(dashData);
+        setTrends(trendsData.trends || []);
+
+        const employeeMap = new Map(employees.map((e) => [e.id, e]));
+        const enrichedRecords = (attendanceLogs || []).map((r) => {
+          const emp = employeeMap.get(r.employee_id);
+          return {
+            ...r,
+            employee_name: emp ? emp.full_name : `Employee #${r.employee_id}`,
+            employee_code: emp ? emp.employee_code : `VX-${r.employee_id}`,
+            department: emp ? emp.department : 'General',
+          };
+        });
+
+        setRecentRecords(enrichedRecords);
+        setLastUpdated(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      } catch (err) {
+        if (err instanceof ApiError) {
+          setError(err.message);
+        } else if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError('Failed to retrieve dashboard metrics.');
+        }
+      } finally {
+        isFetchingRef.current = false;
+        setIsLoading(false);
+        setIsSyncing(false);
+      }
+    },
+    [targetDate]
+  );
 
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
+
+  // Periodic polling (30s) when viewing today's date, with clean unmount
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (targetDate !== todayStr) return;
+
+    const intervalId = setInterval(() => {
+      fetchDashboardData(targetDate, true);
+    }, 30000);
+
+    return () => clearInterval(intervalId);
+  }, [autoRefresh, targetDate, fetchDashboardData]);
 
   return (
     <div className="space-y-6">
@@ -93,6 +125,32 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
         </div>
 
         <div className="flex items-center gap-2.5">
+          {/* Auto-sync indicator & toggle */}
+          {targetDate === new Date().toISOString().split('T')[0] && (
+            <button
+              onClick={() => setAutoRefresh((prev) => !prev)}
+              className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium border transition-colors ${
+                autoRefresh
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+              }`}
+              title={autoRefresh ? 'Auto-refresh every 30s enabled. Click to pause.' : 'Auto-refresh paused. Click to enable.'}
+            >
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  autoRefresh ? (isSyncing ? 'bg-emerald-400 animate-ping' : 'bg-emerald-500') : 'bg-slate-400'
+                }`}
+              />
+              <span>{autoRefresh ? (isSyncing ? 'Syncing...' : 'Auto-sync') : 'Paused'}</span>
+            </button>
+          )}
+
+          {lastUpdated && (
+            <span className="text-[11px] text-slate-400 hidden md:inline">
+              {lastUpdated}
+            </span>
+          )}
+
           <label htmlFor="dashboard-date" className="text-xs font-medium text-slate-600">
             Target Date:
           </label>
@@ -105,12 +163,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
           />
           <button
             onClick={() => fetchDashboardData()}
-            disabled={isLoading}
+            disabled={isLoading || isSyncing}
             className="p-1.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
             title="Refresh dashboard"
             aria-label="Refresh dashboard metrics"
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${isLoading || isSyncing ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>

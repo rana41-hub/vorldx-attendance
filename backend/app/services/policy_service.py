@@ -37,6 +37,27 @@ def get_active_policy(db: Session) -> AttendancePolicy:
     return policy
 
 
+def ensure_timezone_aware(dt: datetime) -> datetime:
+    """Ensure a datetime object is timezone-aware (assumes UTC if naive)."""
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
+def to_organization_time(dt: datetime) -> datetime:
+    """Convert any datetime to the configured organization timezone."""
+    aware_dt = ensure_timezone_aware(dt)
+    try:
+        from zoneinfo import ZoneInfo
+        from app.config import settings
+
+        tz_name = settings.ORGANIZATION_TIMEZONE or "UTC"
+        org_tz = ZoneInfo(tz_name)
+        return aware_dt.astimezone(org_tz)
+    except Exception:
+        return aware_dt
+
+
 def calculate_check_in_status(
     check_in_dt: datetime,
     policy: AttendancePolicy,
@@ -48,7 +69,8 @@ def calculate_check_in_status(
     if not policy.auto_detect_late_arrival:
         return AttendanceStatus.PRESENT, False
 
-    check_in_minutes = check_in_dt.hour * 60 + check_in_dt.minute
+    local_dt = to_organization_time(check_in_dt)
+    check_in_minutes = local_dt.hour * 60 + local_dt.minute
     start_minutes = policy.work_start_time.hour * 60 + policy.work_start_time.minute
     grace_cutoff = start_minutes + policy.late_grace_minutes
     half_day_cutoff = start_minutes + int(policy.half_day_hours_threshold * 60)
@@ -69,12 +91,17 @@ def calculate_check_out_status(
 ) -> Tuple[AttendanceStatus, float, bool]:
     """
     Calculate attendance status upon check-out based on hours worked and departure time.
+    Safely avoids comparing naive and timezone-aware datetimes.
     Returns (updated_status, hours_worked, is_early_departure).
     """
-    duration_seconds = max(0.0, (check_out_dt - check_in_dt).total_seconds())
+    aware_in = ensure_timezone_aware(check_in_dt)
+    aware_out = ensure_timezone_aware(check_out_dt)
+
+    duration_seconds = max(0.0, (aware_out - aware_in).total_seconds())
     hours_worked = round(duration_seconds / 3600.0, 2)
 
-    check_out_minutes = check_out_dt.hour * 60 + check_out_dt.minute
+    local_out = to_organization_time(aware_out)
+    check_out_minutes = local_out.hour * 60 + local_out.minute
     end_minutes = policy.work_end_time.hour * 60 + policy.work_end_time.minute
     early_cutoff = end_minutes - policy.early_departure_grace_minutes
     is_early = check_out_minutes < early_cutoff

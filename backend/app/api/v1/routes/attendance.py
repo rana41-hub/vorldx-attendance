@@ -29,7 +29,9 @@ from app.schemas.attendance_policy import (
 from app.services.policy_service import (
     calculate_check_in_status,
     calculate_check_out_status,
+    ensure_timezone_aware,
     get_active_policy,
+    to_organization_time,
 )
 
 router = APIRouter(prefix="/attendance", tags=["Attendance"])
@@ -87,8 +89,9 @@ def record_check_in(
             detail="Employee not found.",
         )
 
-    check_in_dt = payload.timestamp or datetime.now(timezone.utc)
-    record_date = check_in_dt.date()
+    raw_check_in = payload.timestamp or datetime.now(timezone.utc)
+    check_in_dt = ensure_timezone_aware(raw_check_in)
+    record_date = to_organization_time(check_in_dt).date()
 
     existing = db.scalar(
         select(AttendanceRecord).where(
@@ -127,8 +130,9 @@ def record_check_out(
     if current_user:
         require_self_or_admin(payload.employee_id, current_user)
 
-    check_out_dt = payload.timestamp or datetime.now(timezone.utc)
-    record_date = check_out_dt.date()
+    raw_check_out = payload.timestamp or datetime.now(timezone.utc)
+    check_out_dt = ensure_timezone_aware(raw_check_out)
+    record_date = to_organization_time(check_out_dt).date()
 
     record = db.scalar(
         select(AttendanceRecord).where(
@@ -136,6 +140,16 @@ def record_check_out(
             AttendanceRecord.attendance_date == record_date,
         )
     )
+    # Midnight boundary fallback: If no record found for today's calendar date,
+    # find any un-concluded shift started by the employee within the last 24 hours.
+    if not record:
+        record = db.scalar(
+            select(AttendanceRecord).where(
+                AttendanceRecord.employee_id == payload.employee_id,
+                AttendanceRecord.check_out.is_(None),
+            ).order_by(AttendanceRecord.check_in.desc())
+        )
+
     if not record:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

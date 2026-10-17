@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  AppState,
+  type AppStateStatus,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
@@ -65,9 +67,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
     return () => clearInterval(interval);
   }, [todayRecord]);
 
+  const isFetchingStatsRef = useRef(false);
+
   // Fetch real employee stats (attendance days, pending leaves, pending WFH)
   const loadStats = useCallback(async () => {
-    if (!currentEmployee) return;
+    if (!currentEmployee || isFetchingStatsRef.current) return;
+    isFetchingStatsRef.current = true;
     try {
       const [att, leaves, wfh] = await Promise.all([
         ApiService.getAttendance(currentEmployee.id),
@@ -81,12 +86,29 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
       });
     } catch {
       // In offline mode or error, keep existing state
+    } finally {
+      isFetchingStatsRef.current = false;
     }
   }, [currentEmployee]);
 
   useEffect(() => {
     loadStats();
   }, [loadStats, todayRecord]);
+
+  // Foreground sync: update stats and attendance when user switches back into the app
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') {
+        refreshTodayStatus();
+        loadStats();
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => {
+      subscription.remove();
+    };
+  }, [loadStats, refreshTodayStatus]);
 
   const handleQuickCheckIn = async (source: string = 'OFFICE_STATION') => {
     if (!currentEmployee) {

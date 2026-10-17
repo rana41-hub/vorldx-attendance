@@ -14,6 +14,8 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   ScrollView,
+  AppState,
+  type AppStateStatus,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
@@ -56,6 +58,17 @@ export const LeaveScreen: React.FC = () => {
 
   useEffect(() => {
     fetchLeaves();
+  }, [fetchLeaves]);
+
+  // Foreground sync: reload leave requests when returning to app
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') {
+        fetchLeaves();
+      }
+    };
+    const sub = AppState.addEventListener('change', handleAppStateChange);
+    return () => sub.remove();
   }, [fetchLeaves]);
 
   useEffect(() => {

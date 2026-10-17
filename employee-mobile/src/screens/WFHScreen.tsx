@@ -14,6 +14,8 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   ScrollView,
+  AppState,
+  type AppStateStatus,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
@@ -56,6 +58,17 @@ export const WFHScreen: React.FC = () => {
 
   useEffect(() => {
     fetchWFH();
+  }, [fetchWFH]);
+
+  // Foreground sync: reload WFH requests when returning to app
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') {
+        fetchWFH();
+      }
+    };
+    const sub = AppState.addEventListener('change', handleAppStateChange);
+    return () => sub.remove();
   }, [fetchWFH]);
 
   useEffect(() => {
