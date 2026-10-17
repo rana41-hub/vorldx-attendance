@@ -100,11 +100,16 @@ def calculate_check_out_status(
     duration_seconds = max(0.0, (aware_out - aware_in).total_seconds())
     hours_worked = round(duration_seconds / 3600.0, 2)
 
+    local_in = to_organization_time(aware_in)
     local_out = to_organization_time(aware_out)
-    check_out_minutes = local_out.hour * 60 + local_out.minute
-    end_minutes = policy.work_end_time.hour * 60 + policy.work_end_time.minute
-    early_cutoff = end_minutes - policy.early_departure_grace_minutes
-    is_early = check_out_minutes < early_cutoff
+    if local_out.date() > local_in.date():
+        # Shift crossed midnight calendar-day boundary; check-out is on subsequent day
+        is_early = False
+    else:
+        check_out_minutes = local_out.hour * 60 + local_out.minute
+        end_minutes = policy.work_end_time.hour * 60 + policy.work_end_time.minute
+        early_cutoff = end_minutes - policy.early_departure_grace_minutes
+        is_early = check_out_minutes < early_cutoff
 
     if not policy.auto_detect_early_departure:
         return current_status, hours_worked, is_early

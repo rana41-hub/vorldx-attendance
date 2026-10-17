@@ -2,6 +2,7 @@ from datetime import date, datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.dependencies.auth import (
@@ -116,7 +117,14 @@ def record_check_in(
         source=payload.source or "OFFICE_QR",
     )
     db.add(record)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Attendance record already exists for this employee today.",
+        )
     db.refresh(record)
     return record
 
@@ -138,7 +146,7 @@ def record_check_out(
         select(AttendanceRecord).where(
             AttendanceRecord.employee_id == payload.employee_id,
             AttendanceRecord.attendance_date == record_date,
-        )
+        ).with_for_update()
     )
     # Midnight boundary fallback: If no record found for today's calendar date,
     # find any un-concluded shift started by the employee within the last 24 hours.
@@ -147,7 +155,7 @@ def record_check_out(
             select(AttendanceRecord).where(
                 AttendanceRecord.employee_id == payload.employee_id,
                 AttendanceRecord.check_out.is_(None),
-            ).order_by(AttendanceRecord.check_in.desc())
+            ).order_by(AttendanceRecord.check_in.desc()).with_for_update()
         )
 
     if not record:
