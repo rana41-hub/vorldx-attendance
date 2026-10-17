@@ -18,13 +18,72 @@ interface ScannerScreenProps {
   onCancel: () => void;
 }
 
+interface KioskQRPayload {
+  type: string;
+  token: string;
+  office?: string;
+}
+
+/**
+ * Validate and extract security token from scanned QR data.
+ * Supports official JSON payload {"type":"VORLDX_OFFICE_QR","token":"...","office":"..."}
+ * and raw cryptographic token strings.
+ */
+const parseScannedQR = (
+  rawData: string
+): { valid: boolean; token?: string; error?: string } => {
+  const trimmed = rawData.trim();
+  if (!trimmed) {
+    return { valid: false, error: 'Empty QR code scanned.' };
+  }
+
+  // 1. Check for structured JSON payload from official Admin Kiosk Display
+  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(trimmed) as Partial<KioskQRPayload>;
+      if (!parsed || typeof parsed !== 'object') {
+        return { valid: false, error: 'Invalid QR payload structure.' };
+      }
+      if (parsed.type !== 'VORLDX_OFFICE_QR') {
+        return {
+          valid: false,
+          error: 'Unrecognized QR code. Please scan an official VorldX Office Kiosk display.',
+        };
+      }
+      if (!parsed.token || typeof parsed.token !== 'string' || !parsed.token.trim()) {
+        return {
+          valid: false,
+          error: 'Corrupted QR code: Missing security token.',
+        };
+      }
+      return { valid: true, token: parsed.token.trim() };
+    } catch {
+      return {
+        valid: false,
+        error: 'Malformed QR data format. Please scan the official office screen.',
+      };
+    }
+  }
+
+  // 2. Fallback: If it's a raw token string (e.g. from simulator manual input or raw token QR)
+  if (trimmed.length >= 20 && !trimmed.includes(' ') && !trimmed.includes('\n')) {
+    return { valid: true, token: trimmed };
+  }
+
+  return {
+    valid: false,
+    error: 'Invalid QR code. Please point camera at the official office display.',
+  };
+};
+
 export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onSuccess, onCancel }) => {
   const { currentEmployee, refreshTodayStatus, showToast } = useApp();
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState<'back' | 'front'>('back');
   const [enableTorch, setEnableTorch] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [manualCode, setManualCode] = useState('OFFICE_QR_MAIN_GATE');
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [manualCode, setManualCode] = useState('');
 
   const handleBarCodeScanned = async (result: BarcodeScanningResult) => {
     if (isProcessing) return;
@@ -34,21 +93,63 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onSuccess, onCance
     await processCheckIn(scannedData);
   };
 
-  const processCheckIn = async (sourceTag: string) => {
+  const processCheckIn = async (scannedRaw: string) => {
+    if (isProcessing) return;
+
     if (!currentEmployee) {
-      showToast('No active employee session found', 'error');
+      showToast('Authentication session missing. Please log in again.', 'error');
       return;
     }
 
     setIsProcessing(true);
+
+    // 1. Client-side structural validation of the scanned payload
+    const parsed = parseScannedQR(scannedRaw);
+    if (!parsed.valid || !parsed.token) {
+      showToast(parsed.error || 'Invalid QR code format.', 'error');
+      // Briefly debounce before re-enabling scan so user is not permanently stuck
+      setTimeout(() => {
+        setIsProcessing(false);
+      }, 1500);
+      return;
+    }
+
+    // 2. Submit to backend with authenticated employee credentials
     try {
-      await ApiService.checkIn(currentEmployee.id, sourceTag);
-      showToast(`Check-in verified via ${sourceTag}!`, 'success');
+      await ApiService.checkIn(currentEmployee.id, 'OFFICE_QR', parsed.token);
+      showToast('Check-in verified successfully via Office QR!', 'success');
       await refreshTodayStatus();
       onSuccess();
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Check-in failed', 'error');
-      setIsProcessing(false);
+    } catch (err: unknown) {
+      const rawMsg = err instanceof Error ? err.message : 'Check-in failed';
+      let userFriendlyMsg = rawMsg;
+
+      const lower = rawMsg.toLowerCase();
+      if (lower.includes('already exists') || lower.includes('409') || lower.includes('conflict')) {
+        userFriendlyMsg = 'Attendance record already exists for today.';
+      } else if (lower.includes('expired')) {
+        userFriendlyMsg = 'QR code has expired. Please scan the current code on the office display.';
+      } else if (lower.includes('rotated') || lower.includes('revoked')) {
+        userFriendlyMsg = 'QR code was recently refreshed. Please scan the latest code on the screen.';
+      } else if (lower.includes('invalid qr') || lower.includes('invalid') || lower.includes('missing')) {
+        userFriendlyMsg = 'Invalid QR code. Please scan the official VorldX office terminal.';
+      } else if (
+        lower.includes('401') ||
+        lower.includes('unauthorized') ||
+        lower.includes('authenticated') ||
+        lower.includes('session')
+      ) {
+        userFriendlyMsg = 'Your login session has expired. Please log in again.';
+      } else if (lower.includes('network') || lower.includes('timeout') || lower.includes('fetch')) {
+        userFriendlyMsg = 'Network error. Please check your connection to the office server.';
+      }
+
+      showToast(userFriendlyMsg, 'error');
+
+      // Re-enable scanning after 1.5s so employee can scan the updated code
+      setTimeout(() => {
+        setIsProcessing(false);
+      }, 1500);
     }
   };
 
@@ -70,20 +171,30 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onSuccess, onCance
     );
   }
 
-  if (!permission.granted) {
+  if (!permission.granted || cameraError) {
     return (
       <View style={styles.permissionContainer}>
         <View style={styles.iconCircle}>
-          <Ionicons name="camera-outline" size={48} color="#4F46E5" />
+          <Ionicons
+            name={cameraError ? 'alert-circle-outline' : 'camera-outline'}
+            size={48}
+            color={cameraError ? '#EF4444' : '#4F46E5'}
+          />
         </View>
-        <Text style={styles.permissionTitle}>Camera Access Required</Text>
+        <Text style={styles.permissionTitle}>
+          {cameraError ? 'Camera Unavailable' : 'Camera Access Required'}
+        </Text>
         <Text style={styles.permissionSubtitle}>
-          To verify office presence, scan the physical QR code badge located at the office entrance.
+          {cameraError
+            ? `The camera could not be accessed (${cameraError}). You may use the fallback below to submit your dynamic office token.`
+            : 'To verify office presence, scan the dynamic QR code displayed on the official office terminal screen.'}
         </Text>
 
-        <TouchableOpacity style={styles.grantBtn} onPress={requestPermission} activeOpacity={0.8}>
-          <Text style={styles.grantBtnText}>Grant Camera Permission</Text>
-        </TouchableOpacity>
+        {!cameraError && (
+          <TouchableOpacity style={styles.grantBtn} onPress={requestPermission} activeOpacity={0.8}>
+            <Text style={styles.grantBtnText}>Grant Camera Permission</Text>
+          </TouchableOpacity>
+        )}
 
         {/* Manual Fallback for Simulator / Testing */}
         <View style={styles.manualFallbackCard}>
@@ -93,18 +204,20 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onSuccess, onCance
               style={styles.manualInput}
               value={manualCode}
               onChangeText={setManualCode}
-              placeholder="e.g. OFFICE_QR_GATE"
+              placeholder="Paste QR JSON or raw token"
               placeholderTextColor="#94A3B8"
+              autoCapitalize="none"
+              autoCorrect={false}
             />
             <TouchableOpacity
               style={styles.manualSubmitBtn}
               onPress={() => processCheckIn(manualCode)}
-              disabled={isProcessing}
+              disabled={isProcessing || !manualCode.trim()}
             >
               {isProcessing ? (
                 <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
-                <Text style={styles.manualSubmitText}>Log In</Text>
+                <Text style={styles.manualSubmitText}>Submit</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -127,6 +240,7 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onSuccess, onCance
           barcodeTypes: ['qr'],
         }}
         onBarcodeScanned={isProcessing ? undefined : handleBarCodeScanned}
+        onMountError={(error) => setCameraError(error.message)}
       />
 
       {/* Top Header Overlay */}
@@ -136,7 +250,7 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onSuccess, onCance
         </TouchableOpacity>
 
         <View style={styles.titleBadge}>
-          <Text style={styles.titleBadgeText}>Scan Office QR Code</Text>
+          <Text style={styles.titleBadgeText}>Scan Office Kiosk QR</Text>
         </View>
 
         <View style={styles.topRightActions}>
@@ -172,34 +286,39 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onSuccess, onCance
           {isProcessing ? (
             <View style={styles.processingBadge}>
               <ActivityIndicator color="#FFFFFF" size="small" />
-              <Text style={styles.processingText}>Verifying QR...</Text>
+              <Text style={styles.processingText}>Verifying Dynamic QR...</Text>
             </View>
           ) : (
             <View style={styles.scanLine} />
           )}
         </View>
         <Text style={styles.helperText}>
-          Align the QR code within the frame to record presence
+          Align the official Office Kiosk QR code within the frame
         </Text>
       </View>
 
-      {/* Bottom Testing Bar */}
+      {/* Bottom Bar: Manual Input / Status */}
       <View style={styles.bottomBar}>
-        <View style={styles.quickSimRow}>
-          <Text style={styles.quickSimLabel}>Quick Test Badges:</Text>
+        <View style={styles.bottomInputRow}>
+          <TextInput
+            style={styles.bottomTextInput}
+            value={manualCode}
+            onChangeText={setManualCode}
+            placeholder="Paste Kiosk QR JSON or token..."
+            placeholderTextColor="#94A3B8"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
           <TouchableOpacity
-            style={styles.quickSimPill}
-            onPress={() => processCheckIn('OFFICE_QR_LOBBY')}
-            disabled={isProcessing}
+            style={styles.bottomVerifyBtn}
+            onPress={() => processCheckIn(manualCode)}
+            disabled={isProcessing || !manualCode.trim()}
           >
-            <Text style={styles.quickSimPillText}>Lobby QR</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.quickSimPill}
-            onPress={() => processCheckIn('OFFICE_QR_DESK')}
-            disabled={isProcessing}
-          >
-            <Text style={styles.quickSimPillText}>Desk QR</Text>
+            {isProcessing ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <Text style={styles.bottomVerifyText}>Verify</Text>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -448,29 +567,35 @@ const styles = StyleSheet.create({
     bottom: 30,
     left: 20,
     right: 20,
-    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+    backgroundColor: 'rgba(15, 23, 42, 0.85)',
     borderRadius: 16,
-    padding: 12,
+    padding: 10,
   },
-  quickSimRow: {
+  bottomInputRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 8,
   },
-  quickSimLabel: {
-    color: '#94A3B8',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  quickSimPill: {
-    backgroundColor: '#4F46E5',
+  bottomTextInput: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 10,
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingVertical: 8,
+    fontSize: 13,
+    color: '#0F172A',
   },
-  quickSimPillText: {
+  bottomVerifyBtn: {
+    backgroundColor: '#4F46E5',
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bottomVerifyText: {
     color: '#FFFFFF',
-    fontSize: 11,
     fontWeight: '700',
+    fontSize: 13,
   },
 });

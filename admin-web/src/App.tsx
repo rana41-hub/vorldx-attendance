@@ -12,6 +12,7 @@ import { WFHPage } from './features/wfh/WFHPage';
 import { PolicyPage } from './features/policy/PolicyPage';
 import { ReportsPage } from './features/reports/ReportsPage';
 import { SettingsPage } from './features/settings/SettingsPage';
+import { KioskPage } from './features/kiosk/KioskPage';
 import { api } from './services/api';
 import type { SystemHealth } from './types';
 
@@ -50,6 +51,16 @@ export const App: React.FC = () => {
         <Routes>
           {/* Public Authentication Route */}
           <Route path="/login" element={<LoginPage />} />
+
+          {/* Dedicated Fullscreen Office Attendance Kiosk Route */}
+          <Route
+            path="/kiosk"
+            element={
+              <ProtectedRoute>
+                <KioskPage />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Protected Administrator Application Routes */}
           <Route

@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     # Timezone configuration (default UTC, configurable for organization local timezone)
     ORGANIZATION_TIMEZONE: str = Field(default="UTC")
 
+    # Dynamic QR Code configuration (seconds)
+    QR_CODE_EXPIRATION_SECONDS: int = Field(default=30)
+
     # JWT Authentication configuration
     JWT_SECRET_KEY: str = Field(
         default="change-this-in-production-use-a-strong-secret-key"

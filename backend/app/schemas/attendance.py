@@ -16,6 +16,7 @@ class AttendanceCheckInRequest(BaseModel):
     employee_id: int
     source: Optional[str] = "OFFICE_QR"
     timestamp: Optional[datetime] = None
+    qr_token: Optional[str] = None
 
 
 class AttendanceCheckOutRequest(BaseModel):

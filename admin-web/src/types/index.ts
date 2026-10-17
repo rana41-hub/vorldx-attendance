@@ -162,3 +162,15 @@ export interface AttendanceTrendsResponse {
   end_date: string;
   trends: DailyTrendItem[];
 }
+
+export interface QRSession {
+  session_id: number;
+  token: string;
+  qr_code_payload: string;
+  office_code: string;
+  created_at: string;
+  expires_at: string;
+  remaining_seconds: number;
+  is_active: boolean;
+}
+

@@ -35,10 +35,10 @@ const detectedHost = getDetectedHost();
 export const DEFAULT_URL = detectedHost
   ? `http://${detectedHost}:8000`
   : Platform.select({
-      android: 'http://10.0.2.2:8000',
-      ios: 'http://172.20.10.2:8000',
-      default: 'http://172.20.10.2:8000',
-    });
+    android: 'http://10.0.2.2:8000',
+    ios: 'http://172.20.10.2:8000',
+    default: 'http://172.20.10.2:8000',
+  });
 
 let cachedBaseUrl: string = DEFAULT_URL;
 let cachedToken: string | null = null;
@@ -236,14 +236,20 @@ export class ApiService {
 
   public static async checkIn(
     employeeId: number,
-    source: string = 'MOBILE_APP'
+    source: string = 'OFFICE_QR',
+    qrToken?: string
   ): Promise<AttendanceRecord> {
+    const bodyPayload: { employee_id: number; source: string; qr_token?: string } = {
+      employee_id: employeeId,
+      source,
+    };
+    if (qrToken && qrToken.trim()) {
+      bodyPayload.qr_token = qrToken.trim();
+    }
+
     return this.request<AttendanceRecord>('/api/v1/attendance/check-in', {
       method: 'POST',
-      body: JSON.stringify({
-        employee_id: employeeId,
-        source,
-      }),
+      body: JSON.stringify(bodyPayload),
     });
   }
 

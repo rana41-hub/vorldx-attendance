@@ -34,6 +34,7 @@ from app.services.policy_service import (
     get_active_policy,
     to_organization_time,
 )
+from app.services.qr_service import validate_qr_token
 
 router = APIRouter(prefix="/attendance", tags=["Attendance"])
 
@@ -109,12 +110,24 @@ def record_check_in(
     policy = get_active_policy(db)
     calculated_status, _ = calculate_check_in_status(check_in_dt, policy)
 
+    # Dynamic QR Session Validation
+    source_tag = payload.source or "OFFICE_QR"
+    if payload.qr_token:
+        if not current_user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required for dynamic QR attendance check-in.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        qr_session = validate_qr_token(db, payload.qr_token)
+        source_tag = f"DYNAMIC_QR_{qr_session.office_code}"
+
     record = AttendanceRecord(
         employee_id=payload.employee_id,
         attendance_date=record_date,
         check_in=check_in_dt,
         status=calculated_status,
-        source=payload.source or "OFFICE_QR",
+        source=source_tag,
     )
     db.add(record)
     try:

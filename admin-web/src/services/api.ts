@@ -10,6 +10,7 @@ import type {
   LeaveRequest,
   LoginResponse,
   PolicyCalculationResponse,
+  QRSession,
   SystemHealth,
   User,
   WFHRequest,
@@ -422,6 +423,18 @@ export const api = {
     return request<WFHRequest>(`/api/v1/wfh/${id}/review`, {
       method: 'PATCH',
       body: JSON.stringify({ action, review_notes: notes }),
+    });
+  },
+
+  // Dynamic QR Kiosk Sessions
+  async getActiveQRSession(officeCode: string = 'HQ_MAIN'): Promise<QRSession> {
+    return request<QRSession>(`/api/v1/qr/active?office_code=${encodeURIComponent(officeCode)}`);
+  },
+
+  async rotateQRSession(officeCode: string = 'HQ_MAIN', expireSeconds?: number): Promise<QRSession> {
+    return request<QRSession>('/api/v1/qr/rotate', {
+      method: 'POST',
+      body: JSON.stringify({ office_code: officeCode, expire_seconds: expireSeconds }),
     });
   },
 };

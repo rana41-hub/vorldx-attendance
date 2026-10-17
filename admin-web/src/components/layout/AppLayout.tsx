@@ -16,6 +16,7 @@ import {
   Shield,
   Building2,
   LogOut,
+  QrCode,
 } from 'lucide-react';
 import { HealthIndicator } from '../ui/HealthIndicator';
 import { useAuth } from '../../context/useAuth';
@@ -29,6 +30,7 @@ interface AppLayoutProps {
 
 const navItems = [
   { name: 'Dashboard', path: '/', icon: LayoutDashboard },
+  { name: 'Office QR Kiosk', path: '/kiosk', icon: QrCode },
   { name: 'Employees', path: '/employees', icon: Users },
   { name: 'Attendance', path: '/attendance', icon: CalendarCheck },
   { name: 'Leave Requests', path: '/leave', icon: CalendarX2 },
