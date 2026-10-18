@@ -10,7 +10,11 @@ export const formatTime = (isoString?: string | null): string => {
   try {
     const d = new Date(isoString);
     if (isNaN(d.getTime())) return '--:--';
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Asia/Kolkata',
+    });
   } catch {
     return '--:--';
   }
@@ -24,11 +28,12 @@ export const formatDate = (isoString?: string | null): string => {
   try {
     const d = new Date(isoString);
     if (isNaN(d.getTime())) return isoString;
-    return d.toLocaleDateString(undefined, {
+    return d.toLocaleDateString('en-IN', {
       weekday: 'short',
       year: 'numeric',
       month: 'short',
       day: 'numeric',
+      timeZone: 'Asia/Kolkata',
     });
   } catch {
     return isoString;

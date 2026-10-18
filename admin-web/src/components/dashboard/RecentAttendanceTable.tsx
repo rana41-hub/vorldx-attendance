@@ -103,7 +103,11 @@ export const RecentAttendanceTable: React.FC<RecentAttendanceTableProps> = ({
                   if (!ts) return '—';
                   try {
                     const date = new Date(ts);
-                    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    return date.toLocaleTimeString('en-IN', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      timeZone: 'Asia/Kolkata',
+                    });
                   } catch {
                     return ts;
                   }
@@ -137,7 +141,16 @@ export const RecentAttendanceTable: React.FC<RecentAttendanceTableProps> = ({
                       {formatTime(record.check_out)}
                     </td>
                     <td className="px-5 py-3.5">
-                      <StatusBadge status={record.status} size="sm" />
+                      <StatusBadge
+                        status={
+                          record.session_state === 'INCOMPLETE' || (record.check_out && record.status === 'HALF_DAY')
+                            ? 'INCOMPLETE'
+                            : !record.check_out || record.session_state === 'IN_PROGRESS'
+                            ? 'IN_PROGRESS'
+                            : record.status
+                        }
+                        size="sm"
+                      />
                     </td>
                   </tr>
                 );

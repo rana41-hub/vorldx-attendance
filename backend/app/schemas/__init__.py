@@ -3,6 +3,8 @@ from app.schemas.attendance import (
     AttendanceCheckOutRequest,
     AttendanceRecordBase,
     AttendanceRecordResponse,
+    EmployeeAttendanceStats,
+    EmployeeDashboardResponse,
 )
 from app.schemas.employee import (
     EmployeeBase,

@@ -105,10 +105,11 @@ export const AttendancePage: React.FC = () => {
   const formatTime = (isoString?: string | null) => {
     if (!isoString) return '—';
     try {
-      return new Date(isoString).toLocaleTimeString([], {
+      return new Date(isoString).toLocaleTimeString('en-IN', {
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
+        timeZone: 'Asia/Kolkata',
       });
     } catch {
       return isoString;
@@ -329,7 +330,9 @@ export const AttendancePage: React.FC = () => {
                     <td className="px-5 py-3.5 font-mono text-xs text-slate-800">{formatTime(r.check_in)}</td>
                     <td className="px-5 py-3.5 font-mono text-xs text-slate-800">{formatTime(r.check_out)}</td>
                     <td className="px-5 py-3.5 text-xs text-slate-600 font-medium">
-                      {calculateHours(r.check_in, r.check_out)}
+                      {r.hours_worked !== undefined && r.hours_worked !== null
+                        ? `${r.hours_worked.toFixed(1)} hrs`
+                        : calculateHours(r.check_in, r.check_out)}
                     </td>
                     <td className="px-5 py-3.5 text-xs">
                       <span className="inline-block px-2 py-0.5 rounded-md bg-slate-100 font-mono text-[10px] text-slate-600">
@@ -337,7 +340,16 @@ export const AttendancePage: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-5 py-3.5">
-                      <StatusBadge status={r.status} size="sm" />
+                      <StatusBadge
+                        status={
+                          r.session_state === 'INCOMPLETE' || (r.check_out && r.status === 'HALF_DAY')
+                            ? 'INCOMPLETE'
+                            : !r.check_out || r.session_state === 'IN_PROGRESS'
+                            ? 'IN_PROGRESS'
+                            : r.status
+                        }
+                        size="sm"
+                      />
                     </td>
                   </tr>
                 ))

@@ -62,6 +62,8 @@ export interface AttendanceRecord {
   employee_name?: string;
   employee_code?: string;
   department?: string;
+  hours_worked?: number | null;
+  session_state?: string | null;
 }
 
 export interface LeaveRequest {

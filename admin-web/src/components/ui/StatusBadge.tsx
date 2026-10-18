@@ -1,7 +1,17 @@
 import React from 'react';
 
 interface StatusBadgeProps {
-  status: 'PRESENT' | 'LATE' | 'HALF_DAY' | 'ABSENT' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+  status:
+    | 'PRESENT'
+    | 'LATE'
+    | 'HALF_DAY'
+    | 'ABSENT'
+    | 'PENDING'
+    | 'APPROVED'
+    | 'REJECTED'
+    | 'CANCELLED'
+    | 'IN_PROGRESS'
+    | 'INCOMPLETE';
   size?: 'sm' | 'md';
 }
 
@@ -26,6 +36,18 @@ const statusConfig: Record<
     bg: 'bg-sky-50 border-sky-200',
     text: 'text-sky-700',
     dot: 'bg-sky-500',
+  },
+  IN_PROGRESS: {
+    label: 'In Progress',
+    bg: 'bg-indigo-50 border-indigo-200',
+    text: 'text-indigo-700',
+    dot: 'bg-indigo-500',
+  },
+  INCOMPLETE: {
+    label: 'Incomplete',
+    bg: 'bg-amber-50 border-amber-200',
+    text: 'text-amber-700',
+    dot: 'bg-amber-500',
   },
   ABSENT: {
     label: 'Absent',

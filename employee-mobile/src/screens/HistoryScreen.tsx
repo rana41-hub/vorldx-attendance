@@ -67,7 +67,16 @@ export const HistoryScreen: React.FC = () => {
           <Ionicons name="calendar-outline" size={16} color="#6366F1" />
           <Text style={styles.dateText}>{item.attendance_date}</Text>
         </View>
-        <StatusBadge status={item.status} size="sm" />
+        <StatusBadge
+          status={
+            item.session_state === 'INCOMPLETE' || (item.check_out && item.status === 'HALF_DAY')
+              ? 'INCOMPLETE'
+              : item.session_state === 'IN_PROGRESS' || !item.check_out
+              ? 'IN_PROGRESS'
+              : item.status
+          }
+          size="sm"
+        />
       </View>
 
       <View style={styles.timesContainer}>

@@ -50,10 +50,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const records = await ApiService.getAttendance(currentEmployee.id, today);
+      // 1. Prefer authoritative backend dashboard data
+      try {
+        const dashData = await ApiService.getDashboardData();
+        if (dashData && dashData.today_record !== undefined) {
+          setTodayRecord(dashData.today_record);
+          return;
+        }
+      } catch {
+        // Fallback to record query if dashboard endpoint is unavailable
+      }
+
+      // 2. Resilient fallback: Query recent records without UTC date mismatch
+      const records = await ApiService.getAttendance(currentEmployee.id);
       if (records && records.length > 0) {
-        setTodayRecord(records[0]);
+        const latest = records[0];
+        const now = new Date();
+        const localTodayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        // Match today's shift or any unclosed shift started in the last 24h
+        if (latest.attendance_date === localTodayStr || !latest.check_out) {
+          setTodayRecord(latest);
+        } else {
+          setTodayRecord(null);
+        }
       } else {
         setTodayRecord(null);
       }

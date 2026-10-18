@@ -14,6 +14,7 @@ import { useApp } from '../context/AppContext';
 import { StatusBadge } from '../components/StatusBadge';
 import { ApiService } from '../services/api';
 import { formatTime, formatDuration } from '../utils/formatters';
+import type { AttendanceRecord, EmployeeDashboardData } from '../types';
 
 interface HomeScreenProps {
   onNavigateTab: (tab: 'home' | 'scanner' | 'history' | 'leave' | 'wfh' | 'profile') => void;
@@ -34,23 +35,34 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [stats, setStats] = useState({
     presentDays: 0,
+    lateDays: 0,
+    attendancePercentage: 100.0,
+    totalRecords: 0,
     leaveCount: 0,
     wfhCount: 0,
   });
+  const [recentRecords, setRecentRecords] = useState<AttendanceRecord[]>([]);
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
 
   // Keep live time and working duration updated
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
       setCurrentTime(
-        now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        now.toLocaleTimeString('en-IN', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          timeZone: 'Asia/Kolkata',
+        })
       );
       setCurrentDateStr(
-        now.toLocaleDateString(undefined, {
+        now.toLocaleDateString('en-IN', {
           weekday: 'long',
           year: 'numeric',
           month: 'short',
           day: 'numeric',
+          timeZone: 'Asia/Kolkata',
         })
       );
 
@@ -73,21 +85,57 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
   const loadStats = useCallback(async () => {
     if (!currentEmployee || isFetchingStatsRef.current) return;
     isFetchingStatsRef.current = true;
+    setIsLoadingStats(true);
     try {
-      const [att, leaves, wfh] = await Promise.all([
-        ApiService.getAttendance(currentEmployee.id),
+      let dashData: EmployeeDashboardData | null = null;
+      try {
+        dashData = await ApiService.getDashboardData();
+      } catch {
+        // Fallback to direct records query if dashboard endpoint is unavailable
+      }
+
+      const [leavesRes, wfhRes, attFallback] = await Promise.allSettled([
         ApiService.getLeaveRequests(currentEmployee.id),
         ApiService.getWFHRequests(currentEmployee.id),
+        dashData ? Promise.resolve([]) : ApiService.getAttendance(currentEmployee.id),
       ]);
-      setStats({
-        presentDays: att.length,
-        leaveCount: leaves.filter((l) => l.status === 'PENDING').length,
-        wfhCount: wfh.filter((w) => w.status === 'PENDING').length,
-      });
+
+      const leaves = leavesRes.status === 'fulfilled' ? leavesRes.value : [];
+      const wfh = wfhRes.status === 'fulfilled' ? wfhRes.value : [];
+
+      if (dashData) {
+        setStats({
+          presentDays: dashData.stats.present_days,
+          lateDays: dashData.stats.late_days,
+          attendancePercentage: dashData.stats.attendance_percentage,
+          totalRecords: dashData.stats.total_records,
+          leaveCount: leaves.filter((l) => l.status === 'PENDING').length,
+          wfhCount: wfh.filter((w) => w.status === 'PENDING').length,
+        });
+        setRecentRecords(dashData.recent_records || []);
+      } else {
+        const att = attFallback.status === 'fulfilled' ? attFallback.value : [];
+        const presentCnt = att.filter((r) => r.status === 'PRESENT' && (r.hours_worked ?? 8.0) >= 8.0).length;
+        const lateCnt = att.filter((r) => r.status === 'LATE' && (r.hours_worked ?? 8.0) >= 8.0).length;
+        const attendedCredits = presentCnt + lateCnt;
+        const total = att.length;
+        const pct = total > 0 ? Math.round((attendedCredits / total) * 1000) / 10 : 100.0;
+
+        setStats({
+          presentDays: presentCnt,
+          lateDays: lateCnt,
+          attendancePercentage: pct,
+          totalRecords: total,
+          leaveCount: leaves.filter((l) => l.status === 'PENDING').length,
+          wfhCount: wfh.filter((w) => w.status === 'PENDING').length,
+        });
+        setRecentRecords(att.slice(0, 5));
+      }
     } catch {
       // In offline mode or error, keep existing state
     } finally {
       isFetchingStatsRef.current = false;
+      setIsLoadingStats(false);
     }
   }, [currentEmployee]);
 
@@ -181,7 +229,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
             <Text style={styles.heroTagText}>Today's Presence</Text>
           </View>
           {todayRecord ? (
-            <StatusBadge status={todayRecord.status} />
+            <StatusBadge
+              status={
+                todayRecord.session_state === 'INCOMPLETE' || (todayRecord.check_out && todayRecord.status === 'HALF_DAY')
+                  ? 'INCOMPLETE'
+                  : todayRecord.session_state === 'IN_PROGRESS' || !todayRecord.check_out
+                  ? 'IN_PROGRESS'
+                  : todayRecord.status
+              }
+            />
           ) : (
             <StatusBadge status="ABSENT" />
           )}
@@ -214,7 +270,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
                   {todayRecord.check_out ? formatTime(todayRecord.check_out) : '--:--'}
                 </Text>
                 <Text style={styles.timeBlockSource}>
-                  {todayRecord.check_out ? 'Completed' : 'In Progress'}
+                  {todayRecord.check_out ? 'Concluded' : 'In Progress'}
                 </Text>
               </View>
             </View>
@@ -238,34 +294,67 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
                   )}
                 </TouchableOpacity>
                 <Text style={styles.actionHelperText}>
-                  Shift in progress ({liveDuration} elapsed). Tap above when ending your workday.
+                  Shift in progress ({liveDuration} elapsed). No full attendance credit until shift completion. Tap above when leaving.
                 </Text>
               </View>
-            ) : (
-              <View style={styles.completedContainer}>
-                <View style={styles.completedNotice}>
-                  <Ionicons name="checkmark-done-circle" size={20} color="#10B981" />
-                  <Text style={styles.completedText}>
-                    Office day marked complete for today.
-                  </Text>
-                </View>
+            ) : (() => {
+              const inMs = new Date(todayRecord.check_in).getTime();
+              const outMs = new Date(todayRecord.check_out).getTime();
+              const hrsWorked = Math.max(0, (outMs - inMs) / (1000 * 3600));
+              const isFullShift = todayRecord.session_state
+                ? todayRecord.session_state === 'COMPLETED'
+                : (hrsWorked >= 8.0 && todayRecord.status !== 'HALF_DAY');
 
-                {/* Finalized Action Banner */}
-                <View style={styles.finalizedActionBar}>
-                  <Ionicons name="lock-closed" size={16} color="#059669" />
-                  <Text style={styles.finalizedActionText}>
-                    Shift Finalized ({formatDuration(todayRecord.check_in, todayRecord.check_out)} total)
-                  </Text>
-                </View>
+              return isFullShift ? (
+                <View style={styles.completedContainer}>
+                  <View style={styles.completedNotice}>
+                    <Ionicons name="checkmark-done-circle" size={20} color="#10B981" />
+                    <Text style={styles.completedText}>
+                      Office day marked complete for today.
+                    </Text>
+                  </View>
 
-                {/* Explanation text */}
-                <View style={styles.completedExplanation}>
-                  <Text style={styles.completedExplanationText}>
-                    Both check-in ({formatTime(todayRecord.check_in)}) and check-out ({formatTime(todayRecord.check_out)}) are recorded. Daily shift is complete. Next check-in opens tomorrow.
-                  </Text>
+                  {/* Finalized Action Banner */}
+                  <View style={styles.finalizedActionBar}>
+                    <Ionicons name="lock-closed" size={16} color="#059669" />
+                    <Text style={styles.finalizedActionText}>
+                      Shift Finalized ({formatDuration(todayRecord.check_in, todayRecord.check_out)} total)
+                    </Text>
+                  </View>
+
+                  {/* Explanation text */}
+                  <View style={styles.completedExplanation}>
+                    <Text style={styles.completedExplanationText}>
+                      Both check-in ({formatTime(todayRecord.check_in)}) and check-out ({formatTime(todayRecord.check_out)}) are recorded. Full qualifying shift (8.0+ hrs) satisfied.
+                    </Text>
+                  </View>
                 </View>
-              </View>
-            )}
+              ) : (
+                <View style={styles.completedContainer}>
+                  <View style={[styles.completedNotice, { backgroundColor: '#FEF3C7', borderColor: '#FDE68A' }]}>
+                    <Ionicons name="alert-circle-outline" size={20} color="#D97706" />
+                    <Text style={[styles.completedText, { color: '#B45309' }]}>
+                      Incomplete Shift ({formatDuration(todayRecord.check_in, todayRecord.check_out)} total).
+                    </Text>
+                  </View>
+
+                  {/* Incomplete Shift Banner */}
+                  <View style={[styles.finalizedActionBar, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
+                    <Ionicons name="time" size={16} color="#D97706" />
+                    <Text style={[styles.finalizedActionText, { color: '#92400E' }]}>
+                      Shift Ended Early ({hrsWorked.toFixed(1)} hrs elapsed)
+                    </Text>
+                  </View>
+
+                  {/* Explanation text */}
+                  <View style={styles.completedExplanation}>
+                    <Text style={styles.completedExplanationText}>
+                      Recorded check-in ({formatTime(todayRecord.check_in)}) and check-out ({formatTime(todayRecord.check_out)}). Did not satisfy 8.0-hour full attendance requirement (0 credit earned).
+                    </Text>
+                  </View>
+                </View>
+              );
+            })()}
           </View>
         ) : (
           <View style={styles.unmarkedBox}>
@@ -314,35 +403,37 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
           onPress={() => onNavigateTab('history')}
           activeOpacity={0.7}
         >
-          <View style={[styles.statIcon, { backgroundColor: '#EEF2FF' }]}>
-            <Ionicons name="calendar-outline" size={18} color="#4F46E5" />
+          <View style={[styles.statIcon, { backgroundColor: '#ECFDF5' }]}>
+            <Ionicons name="checkmark-circle-outline" size={18} color="#16A34A" />
           </View>
           <Text style={styles.statVal}>{stats.presentDays}</Text>
-          <Text style={styles.statTitle}>Days Logged</Text>
+          <Text style={styles.statTitle}>Present Days</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.statCard}
-          onPress={() => onNavigateTab('leave')}
+          onPress={() => onNavigateTab('history')}
           activeOpacity={0.7}
         >
           <View style={[styles.statIcon, { backgroundColor: '#FEF3C7' }]}>
-            <Ionicons name="airplane-outline" size={18} color="#D97706" />
+            <Ionicons name="time-outline" size={18} color="#D97706" />
           </View>
-          <Text style={styles.statVal}>{stats.leaveCount}</Text>
-          <Text style={styles.statTitle}>Pending Leaves</Text>
+          <Text style={styles.statVal}>{stats.lateDays}</Text>
+          <Text style={styles.statTitle}>Late Arrivals</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.statCard}
-          onPress={() => onNavigateTab('wfh')}
+          onPress={() => onNavigateTab('history')}
           activeOpacity={0.7}
         >
-          <View style={[styles.statIcon, { backgroundColor: '#F0FDFA' }]}>
-            <Ionicons name="home-outline" size={18} color="#0D9488" />
+          <View style={[styles.statIcon, { backgroundColor: '#EEF2FF' }]}>
+            <Ionicons name="pie-chart-outline" size={18} color="#4F46E5" />
           </View>
-          <Text style={styles.statVal}>{stats.wfhCount}</Text>
-          <Text style={styles.statTitle}>Pending WFH</Text>
+          <Text style={styles.statVal}>
+            {stats.totalRecords > 0 ? `${stats.attendancePercentage}%` : '100%'}
+          </Text>
+          <Text style={styles.statTitle}>Attendance Rate</Text>
         </TouchableOpacity>
 
         <View style={styles.statCard}>
@@ -416,6 +507,62 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
           <Text style={styles.actionDesc}>Past records</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Recent Attendance History (Requirement 8) */}
+      <View style={styles.recentHeaderRow}>
+        <Text style={styles.recentTitle}>Recent Attendance</Text>
+        <TouchableOpacity onPress={() => onNavigateTab('history')} activeOpacity={0.7}>
+          <Text style={styles.viewAllLink}>View All History</Text>
+        </TouchableOpacity>
+      </View>
+
+      {recentRecords.length > 0 ? (
+        <View style={styles.recentList}>
+          {recentRecords.slice(0, 5).map((record) => (
+            <View key={record.id} style={styles.recentCard}>
+              <View style={styles.recentCardHeader}>
+                <View style={styles.recentDateRow}>
+                  <Ionicons name="calendar-outline" size={15} color="#6366F1" />
+                  <Text style={styles.recentDateText}>{record.attendance_date}</Text>
+                </View>
+                <StatusBadge
+                  status={
+                    record.session_state === 'INCOMPLETE' || (record.check_out && record.status === 'HALF_DAY')
+                      ? 'INCOMPLETE'
+                      : record.session_state === 'IN_PROGRESS' || !record.check_out
+                      ? 'IN_PROGRESS'
+                      : record.status
+                  }
+                  size="sm"
+                />
+              </View>
+
+              <View style={styles.recentDetailsRow}>
+                <View style={styles.recentTimeBlock}>
+                  <Ionicons name="time-outline" size={13} color="#64748B" />
+                  <Text style={styles.recentTimeText}>
+                    {formatTime(record.check_in)} → {record.check_out ? formatTime(record.check_out) : 'In Progress'}
+                  </Text>
+                </View>
+
+                <View style={styles.recentDurationBadge}>
+                  <Text style={styles.recentDurationText}>
+                    {formatDuration(record.check_in, record.check_out, false)}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          ))}
+        </View>
+      ) : (
+        <View style={styles.emptyRecentCard}>
+          <Ionicons name="document-text-outline" size={28} color="#94A3B8" />
+          <Text style={styles.emptyRecentTitle}>No Recent Records Found</Text>
+          <Text style={styles.emptyRecentSubtitle}>
+            Check in or scan the office QR code to start building your verified presence record.
+          </Text>
+        </View>
+      )}
     </ScrollView>
   );
 };
@@ -740,5 +887,95 @@ const styles = StyleSheet.create({
   actionDesc: {
     fontSize: 11,
     color: '#94A3B8',
+  },
+  recentHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 24,
+    marginBottom: 12,
+  },
+  recentTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  viewAllLink: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#4F46E5',
+  },
+  recentList: {
+    gap: 10,
+  },
+  recentCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  recentCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  recentDateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  recentDateText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1E293B',
+  },
+  recentDetailsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  recentTimeBlock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  recentTimeText: {
+    fontSize: 12,
+    color: '#475569',
+    fontWeight: '500',
+  },
+  recentDurationBadge: {
+    backgroundColor: '#EEF2FF',
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+  },
+  recentDurationText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#4F46E5',
+  },
+  emptyRecentCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyRecentTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#334155',
+    marginTop: 8,
+  },
+  emptyRecentSubtitle: {
+    fontSize: 11,
+    color: '#94A3B8',
+    textAlign: 'center',
+    marginTop: 2,
   },
 });

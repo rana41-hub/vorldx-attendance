@@ -23,10 +23,10 @@ class AttendancePolicy(Base):
         String(100), nullable=False, default="Standard Organization Policy"
     )
     work_start_time: Mapped[time] = mapped_column(
-        Time, nullable=False, default=time(9, 30)
+        Time, nullable=False, default=time(9, 0)
     )
     work_end_time: Mapped[time] = mapped_column(
-        Time, nullable=False, default=time(18, 30)
+        Time, nullable=False, default=time(17, 0)
     )
     late_grace_minutes: Mapped[int] = mapped_column(
         Integer, nullable=False, default=15

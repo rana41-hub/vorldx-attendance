@@ -33,6 +33,20 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, size = 'md' })
           text: '#1E40AF',
           label: 'Half Day',
         };
+      case 'IN_PROGRESS':
+        return {
+          bg: '#EEF2FF',
+          border: '#C7D2FE',
+          text: '#4338CA',
+          label: 'In Progress',
+        };
+      case 'INCOMPLETE':
+        return {
+          bg: '#FEF3C7',
+          border: '#FDE68A',
+          text: '#B45309',
+          label: 'Incomplete',
+        };
       case 'PENDING':
         return {
           bg: '#FEF3C7',

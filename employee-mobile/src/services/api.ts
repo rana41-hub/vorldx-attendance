@@ -3,6 +3,7 @@ import { NativeModules, Platform } from 'react-native';
 import type {
   AttendanceRecord,
   Employee,
+  EmployeeDashboardData,
   LeaveRequest,
   SystemHealth,
   TokenResponse,
@@ -260,6 +261,10 @@ export class ApiService {
         employee_id: employeeId,
       }),
     });
+  }
+
+  public static async getDashboardData(): Promise<EmployeeDashboardData> {
+    return this.request<EmployeeDashboardData>('/api/v1/attendance/dashboard');
   }
 
   // --- Leave Requests ---

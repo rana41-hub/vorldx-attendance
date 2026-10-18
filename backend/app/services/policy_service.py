@@ -21,8 +21,8 @@ def get_active_policy(db: Session) -> AttendancePolicy:
     if not policy:
         policy = AttendancePolicy(
             policy_name="Standard Organization Policy",
-            work_start_time=time(9, 30),
-            work_end_time=time(18, 30),
+            work_start_time=time(9, 0),
+            work_end_time=time(17, 0),
             late_grace_minutes=15,
             early_departure_grace_minutes=15,
             half_day_hours_threshold=4.0,
@@ -44,15 +44,15 @@ def ensure_timezone_aware(dt: datetime) -> datetime:
     return dt
 
 
-def to_organization_time(dt: datetime) -> datetime:
+def to_organization_time(dt: datetime, tz_name: Optional[str] = None) -> datetime:
     """Convert any datetime to the configured organization timezone."""
     aware_dt = ensure_timezone_aware(dt)
     try:
         from zoneinfo import ZoneInfo
         from app.config import settings
 
-        tz_name = settings.ORGANIZATION_TIMEZONE or "UTC"
-        org_tz = ZoneInfo(tz_name)
+        target_tz = tz_name or settings.ORGANIZATION_TIMEZONE or "UTC"
+        org_tz = ZoneInfo(target_tz)
         return aware_dt.astimezone(org_tz)
     except Exception:
         return aware_dt

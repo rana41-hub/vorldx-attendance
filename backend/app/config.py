@@ -20,6 +20,12 @@ class Settings(BaseSettings):
 
     # Timezone configuration (default UTC, configurable for organization local timezone)
     ORGANIZATION_TIMEZONE: str = Field(default="UTC")
+    DEFAULT_ORGANIZATION_TIMEZONE: str = Field(default="Asia/Kolkata")
+
+    # Configurable Development Shift Settings (9 AM to 5 PM, 8 hours)
+    DEFAULT_SHIFT_START_TIME: str = Field(default="09:00:00")
+    DEFAULT_SHIFT_END_TIME: str = Field(default="17:00:00")
+    DEFAULT_SHIFT_DURATION_HOURS: float = Field(default=8.0)
 
     # Dynamic QR Code configuration (seconds)
     QR_CODE_EXPIRATION_SECONDS: int = Field(default=30)
