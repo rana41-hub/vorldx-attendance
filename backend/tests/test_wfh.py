@@ -468,3 +468,280 @@ def test_employee_deletion_prevented_with_wfh_history(client):
     assert del_res.status_code == 400
     assert "historical records must be preserved" in del_res.json()["detail"].lower()
     assert "wfh request" in del_res.json()["detail"].lower()
+
+
+def test_wfh_missing_and_invalid_fields_rejected(client):
+    """
+    Scenario 2: Missing or invalid request fields are rejected with 422.
+    """
+    emp = create_and_activate_employee(client, prefix="FLDS")
+
+    # 1. Missing reason
+    res1 = client.post(
+        "/api/v1/wfh",
+        json={
+            "employee_id": emp["id"],
+            "start_date": (date.today() + timedelta(days=1)).isoformat(),
+            "end_date": (date.today() + timedelta(days=2)).isoformat(),
+        },
+        headers=emp["headers"],
+    )
+    assert res1.status_code == 422
+
+    # 2. Whitespace-only reason
+    res2 = client.post(
+        "/api/v1/wfh",
+        json={
+            "employee_id": emp["id"],
+            "start_date": (date.today() + timedelta(days=1)).isoformat(),
+            "end_date": (date.today() + timedelta(days=2)).isoformat(),
+            "reason": "     ",
+        },
+        headers=emp["headers"],
+    )
+    assert res2.status_code == 422
+    assert "at least 3 non-whitespace characters" in res2.text.lower()
+
+    # 3. Reason too short (< 3 characters)
+    res3 = client.post(
+        "/api/v1/wfh",
+        json={
+            "employee_id": emp["id"],
+            "start_date": (date.today() + timedelta(days=1)).isoformat(),
+            "end_date": (date.today() + timedelta(days=2)).isoformat(),
+            "reason": "ab",
+        },
+        headers=emp["headers"],
+    )
+    assert res3.status_code == 422
+
+    # 4. Invalid date format
+    res4 = client.post(
+        "/api/v1/wfh",
+        json={
+            "employee_id": emp["id"],
+            "start_date": "not-a-date",
+            "end_date": (date.today() + timedelta(days=2)).isoformat(),
+            "reason": "Valid reason description here.",
+        },
+        headers=emp["headers"],
+    )
+    assert res4.status_code == 422
+
+
+def test_wfh_unauthorized_endpoints_rejected(client):
+    """
+    Scenario 10: Unauthorized callers cannot access protected WFH endpoints.
+    """
+    # 1. Unauthenticated GET /api/v1/wfh -> 401
+    get_res = client.get("/api/v1/wfh")
+    assert get_res.status_code == 401
+    assert "not provided" in get_res.json()["detail"].lower()
+
+    # 2. Unauthenticated POST /api/v1/wfh -> 401
+    post_res = client.post(
+        "/api/v1/wfh",
+        json={
+            "employee_id": 1,
+            "start_date": (date.today() + timedelta(days=1)).isoformat(),
+            "end_date": (date.today() + timedelta(days=2)).isoformat(),
+            "reason": "Unauthenticated test submission.",
+        },
+    )
+    assert post_res.status_code == 401
+    assert "not provided" in post_res.json()["detail"].lower()
+
+    # 3. Invalid Bearer token -> 401
+    bad_token_res = client.get(
+        "/api/v1/wfh",
+        headers={"Authorization": "Bearer totally-invalid-token"},
+    )
+    assert bad_token_res.status_code == 401
+
+
+def test_wfh_inactive_employee_submission_rejected(client):
+    """
+    Scenario 3: Policy constraint - inactive employees cannot submit WFH requests.
+    """
+    from app.database import SessionLocal
+    from app.models.user import User
+
+    admin = get_admin_auth(client)
+    emp = create_and_activate_employee(client, prefix="INACT")
+
+    # Deactivate the employee's user account in PostgreSQL
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.email == emp["email"]).first()
+        assert user is not None
+        user.is_active = False
+        db.commit()
+    finally:
+        db.close()
+
+    # Admin attempts to submit WFH request on behalf of inactive employee
+    res = client.post(
+        "/api/v1/wfh",
+        json={
+            "employee_id": emp["id"],
+            "start_date": (date.today() + timedelta(days=2)).isoformat(),
+            "end_date": (date.today() + timedelta(days=3)).isoformat(),
+            "reason": "Attempting WFH for inactive employee.",
+        },
+        headers=admin["headers"],
+    )
+    assert res.status_code == 400
+    assert "inactive" in res.json()["detail"].lower()
+
+
+def test_wfh_admin_cannot_approve_own_request(client):
+    """
+    Scenario 11: Employees cannot approve their own requests,
+    even if the user also holds administrator privileges.
+    """
+    from app.database import SessionLocal
+    from app.models.employee import Employee
+    from app.models.user import User
+
+    admin = get_admin_auth(client)
+    admin_user_id = admin["user_id"]
+
+    # Link an employee profile to this admin user
+    db = SessionLocal()
+    unique_code = f"VX-ADM-EMP-{uuid.uuid4().hex[:4].upper()}"
+    try:
+        admin_emp = Employee(
+            employee_code=unique_code,
+            first_name="Admin",
+            last_name="SelfTester",
+            department="Operations",
+            designation="Director",
+            user_id=admin_user_id,
+        )
+        db.add(admin_emp)
+        db.commit()
+        db.refresh(admin_emp)
+        admin_emp_id = admin_emp.id
+    finally:
+        db.close()
+
+    try:
+        # Submit WFH request for the admin's employee profile
+        submit_res = client.post(
+            "/api/v1/wfh",
+            json={
+                "employee_id": admin_emp_id,
+                "start_date": (date.today() + timedelta(days=3)).isoformat(),
+                "end_date": (date.today() + timedelta(days=4)).isoformat(),
+                "reason": "Admin requesting remote work for self.",
+            },
+            headers=admin["headers"],
+        )
+        assert submit_res.status_code == 201
+        wfh_id = submit_res.json()["id"]
+
+        # Admin tries to approve their own WFH request -> 403 Forbidden
+        self_approve_res = client.patch(
+            f"/api/v1/wfh/{wfh_id}/review",
+            json={"action": "APPROVE"},
+            headers=admin["headers"],
+        )
+        assert self_approve_res.status_code == 403
+        assert "cannot approve or reject their own" in self_approve_res.json()["detail"].lower()
+    finally:
+        # Cleanup the test employee profile from admin user
+        clean_db = SessionLocal()
+        try:
+            emp_to_clean = clean_db.get(Employee, admin_emp_id)
+            if emp_to_clean:
+                clean_db.delete(emp_to_clean)
+                clean_db.commit()
+        finally:
+            clean_db.close()
+
+
+def test_wfh_postgres_persistence_and_employee_admin_synchronization(client):
+    """
+    Scenarios 13 & 14:
+    - Request submissions and Admin decisions persist in PostgreSQL.
+    - Employee and Admin API responses reflect the identical stored status and metadata.
+    """
+    from app.database import SessionLocal
+    from app.models.wfh import WFHRequest
+    from app.models.enums import WFHStatus
+
+    admin = get_admin_auth(client)
+    emp = create_and_activate_employee(client, prefix="SYNC")
+
+    start = date.today() + timedelta(days=3)
+    end = date.today() + timedelta(days=5)
+
+    # 1. Employee submits request
+    submit_res = client.post(
+        "/api/v1/wfh",
+        json={
+            "employee_id": emp["id"],
+            "start_date": start.isoformat(),
+            "end_date": end.isoformat(),
+            "reason": "Synchronization and persistence verification test.",
+        },
+        headers=emp["headers"],
+    )
+    assert submit_res.status_code == 201
+    wfh_id = submit_res.json()["id"]
+    assert submit_res.json()["status"] == "PENDING"
+
+    # 2. Verify state in a fresh, isolated PostgreSQL database session
+    db_verify = SessionLocal()
+    try:
+        db_wfh = db_verify.get(WFHRequest, wfh_id)
+        assert db_wfh is not None
+        assert db_wfh.status == WFHStatus.PENDING
+        assert db_wfh.employee_id == emp["id"]
+        assert db_wfh.reviewed_by is None
+        assert db_wfh.reviewed_at is None
+    finally:
+        db_verify.close()
+
+    # 3. Admin reviews and approves the request
+    review_res = client.patch(
+        f"/api/v1/wfh/{wfh_id}/review",
+        json={"action": "APPROVE", "review_notes": "Sync verified."},
+        headers=admin["headers"],
+    )
+    assert review_res.status_code == 200
+    admin_approved = review_res.json()
+    assert admin_approved["status"] == "APPROVED"
+    assert admin_approved["reviewed_by"] == admin["user_id"]
+    assert admin_approved["reviewed_at"] is not None
+
+    # 4. Verify persisted state in another fresh PostgreSQL database session
+    db_verify2 = SessionLocal()
+    try:
+        db_wfh2 = db_verify2.get(WFHRequest, wfh_id)
+        assert db_wfh2 is not None
+        assert db_wfh2.status == WFHStatus.APPROVED
+        assert db_wfh2.reviewed_by == admin["user_id"]
+        assert db_wfh2.reviewed_at is not None
+        persisted_time_iso = db_wfh2.reviewed_at.isoformat()
+    finally:
+        db_verify2.close()
+
+    # 5. Verify Employee API returns the synchronized authoritative state
+    emp_list = client.get("/api/v1/wfh", headers=emp["headers"])
+    assert emp_list.status_code == 200
+    matching_emp = next((item for item in emp_list.json() if item["id"] == wfh_id), None)
+    assert matching_emp is not None
+    assert matching_emp["status"] == "APPROVED"
+    assert matching_emp["reviewed_by"] == admin["user_id"]
+    assert matching_emp["reviewed_at"] is not None
+
+    # 6. Verify Admin API returns the exact same synchronized status
+    admin_list = client.get(f"/api/v1/wfh?employee_id={emp['id']}", headers=admin["headers"])
+    assert admin_list.status_code == 200
+    matching_admin = next((item for item in admin_list.json() if item["id"] == wfh_id), None)
+    assert matching_admin is not None
+    assert matching_admin["status"] == matching_emp["status"] == "APPROVED"
+    assert matching_admin["reviewed_by"] == matching_emp["reviewed_by"] == admin["user_id"]
+    assert matching_admin["reviewed_at"] == matching_emp["reviewed_at"]
+

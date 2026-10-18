@@ -281,9 +281,16 @@ export const WFHPage: React.FC = () => {
                           </button>
                         </div>
                       ) : (
-                        <span className="text-[11px] text-slate-400 font-medium">
-                          Reviewed
-                        </span>
+                        <div className="text-right">
+                          <span className="text-[11px] font-semibold text-slate-500 block">
+                            {r.status === 'APPROVED' ? 'Approved' : 'Rejected'}
+                          </span>
+                          {r.reviewed_at && (
+                            <span className="text-[10px] text-slate-400 font-mono block">
+                              {new Date(r.reviewed_at).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
                       )}
                     </td>
                   </tr>

@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.dependencies.auth import (
-    get_optional_current_user,
+    get_current_user,
     require_admin_user,
     require_self_or_admin,
 )
@@ -30,15 +30,15 @@ def list_wfh_requests(
     employee_id: Optional[int] = Query(None),
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
-    current_user: Optional[User] = Depends(get_optional_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
     List Work-from-Home requests.
-    - Employees can view only their own requests.
+    - Authenticated employees can view only their own requests.
     - Administrators can view requests organization-wide.
     """
-    if current_user and current_user.role == UserRole.EMPLOYEE:
+    if current_user.role == UserRole.EMPLOYEE:
         caller_emp = current_user.employee
         if not caller_emp:
             return []
@@ -56,17 +56,41 @@ def list_wfh_requests(
 @router.post("", response_model=WFHRequestResponse, status_code=status.HTTP_201_CREATED)
 def submit_wfh_request(
     payload: WFHRequestCreate,
-    current_user: Optional[User] = Depends(get_optional_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
     Submit a Work-from-Home request.
-    - Employees can submit requests only for their own account.
+    - Employees can submit requests only for their own server-derived account.
     - Date range validation prevents end date earlier than start date.
+    - Inactive employees cannot submit WFH requests.
     - Status initializes to PENDING.
     """
-    if current_user:
+    if current_user.role == UserRole.EMPLOYEE:
+        caller_emp = current_user.employee
+        if not caller_emp:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No active employee profile associated with authenticated user.",
+            )
         require_self_or_admin(payload.employee_id, current_user)
+        effective_employee_id = caller_emp.id
+        employee = caller_emp
+    else:
+        # Admin submitting on behalf of an employee
+        effective_employee_id = payload.employee_id
+        employee = db.get(Employee, effective_employee_id)
+        if not employee:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Employee not found.",
+            )
+
+    if employee.user and not employee.user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Inactive employees are not eligible for Work-from-Home requests.",
+        )
 
     if payload.end_date < payload.start_date:
         err_status = (
@@ -79,15 +103,8 @@ def submit_wfh_request(
             detail="End date cannot be earlier than start date.",
         )
 
-    employee = db.get(Employee, payload.employee_id)
-    if not employee:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Employee not found.",
-        )
-
     wfh_request = WFHRequest(
-        employee_id=payload.employee_id,
+        employee_id=effective_employee_id,
         start_date=payload.start_date,
         end_date=payload.end_date,
         reason=payload.reason,
@@ -109,6 +126,7 @@ def review_wfh_request(
     """
     Review (approve or reject) a Work-from-Home request.
     - Restricted strictly to Administrators.
+    - Administrators cannot approve or reject their own WFH requests.
     - Authenticated administrator is recorded as reviewer.
     - Approved WFH requests do NOT automatically record attendance.
     """
@@ -117,6 +135,13 @@ def review_wfh_request(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Work-from-home request not found.",
+        )
+
+    # Prevent employee self-approval even if the employee is also an administrator
+    if current_admin.employee and wfh_request.employee_id == current_admin.employee.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrators cannot approve or reject their own WFH requests.",
         )
 
     if wfh_request.status != WFHStatus.PENDING:

@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from enum import Enum
 from typing import Optional
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.models.enums import WFHStatus
 
@@ -23,6 +23,14 @@ class WFHRequestBase(BaseModel):
     start_date: date
     end_date: date
     reason: str = Field(min_length=3, max_length=1000)
+
+    @field_validator("reason")
+    @classmethod
+    def validate_reason_non_empty(cls, v: str) -> str:
+        trimmed = v.strip()
+        if len(trimmed) < 3:
+            raise ValueError("Reason must contain at least 3 non-whitespace characters.")
+        return trimmed
 
 
 class WFHRequestCreate(WFHRequestBase):

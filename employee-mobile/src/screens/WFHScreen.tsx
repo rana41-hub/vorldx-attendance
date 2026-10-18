@@ -24,7 +24,7 @@ import type { WFHRequest, WFHStatus } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
 
 export const WFHScreen: React.FC = () => {
-  const { currentEmployee, showToast } = useApp();
+  const { currentEmployee, user, showToast } = useApp();
   const [requests, setRequests] = useState<WFHRequest[]>([]);
   const [filteredRequests, setFilteredRequests] = useState<WFHRequest[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<'ALL' | WFHStatus>('ALL');
@@ -48,13 +48,13 @@ export const WFHScreen: React.FC = () => {
     try {
       const data = await ApiService.getWFHRequests(currentEmployee.id);
       setRequests(data);
-    } catch {
-      // Keep previous
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Error loading WFH requests', 'error');
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [currentEmployee]);
+  }, [currentEmployee, showToast]);
 
   useEffect(() => {
     fetchWFH();
@@ -102,6 +102,11 @@ export const WFHScreen: React.FC = () => {
       return;
     }
 
+    if (reason.trim().length < 3) {
+      showToast('Reason must be at least 3 characters', 'error');
+      return;
+    }
+
     if (endDate < startDate) {
       showToast('End date cannot be earlier than start date', 'error');
       return;
@@ -140,9 +145,16 @@ export const WFHScreen: React.FC = () => {
       <Text style={styles.reasonText}>{item.reason}</Text>
 
       <View style={styles.cardFooter}>
-        <Text style={styles.footerDate}>
-          Submitted {new Date(item.created_at).toLocaleDateString()}
-        </Text>
+        <View style={styles.footerDateCol}>
+          <Text style={styles.footerDate}>
+            Submitted {new Date(item.created_at).toLocaleDateString()}
+          </Text>
+          {item.reviewed_at && (
+            <Text style={styles.decisionDate}>
+              Decision: {item.status.charAt(0) + item.status.slice(1).toLowerCase()} on {new Date(item.reviewed_at).toLocaleDateString()}
+            </Text>
+          )}
+        </View>
         <Text style={styles.reqId}>WFH #{item.id}</Text>
       </View>
     </View>
@@ -162,12 +174,58 @@ export const WFHScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Isolation Notice Banner */}
-      <View style={styles.noticeBanner}>
-        <Ionicons name="information-circle" size={18} color="#0D9488" />
-        <Text style={styles.noticeText}>
-          Approved WFH requests authorize remote work. You still record daily check-in through the app on remote days.
+      {/* Policy & Eligibility Card */}
+      <View style={styles.eligibilityCard}>
+        <View style={styles.eligibilityHeader}>
+          <View style={styles.policyRow}>
+            <Ionicons name="shield-checkmark" size={16} color="#0D9488" />
+            <Text style={styles.eligibilityTitle}>Remote Work Policy & Status</Text>
+          </View>
+          <View
+            style={[
+              styles.badge,
+              user?.is_active !== false && currentEmployee ? styles.badgeEligible : styles.badgeIneligible,
+            ]}
+          >
+            <Text
+              style={[
+                styles.badgeText,
+                user?.is_active !== false && currentEmployee
+                  ? styles.badgeTextEligible
+                  : styles.badgeTextIneligible,
+              ]}
+            >
+              {user?.is_active !== false && currentEmployee ? 'Eligible' : 'Ineligible'}
+            </Text>
+          </View>
+        </View>
+
+        <Text style={styles.eligibilityDescription}>
+          Active employees are eligible for remote work authorization. Approved requests authorize remote status; daily check-in is still required through the app.
         </Text>
+
+        <View style={styles.statCounters}>
+          <View style={styles.counterItem}>
+            <Text style={styles.counterVal}>
+              {requests.filter((r) => r.status === 'APPROVED').length}
+            </Text>
+            <Text style={styles.counterLabel}>Approved</Text>
+          </View>
+          <View style={styles.counterDivider} />
+          <View style={styles.counterItem}>
+            <Text style={styles.counterVal}>
+              {requests.filter((r) => r.status === 'PENDING').length}
+            </Text>
+            <Text style={styles.counterLabel}>Pending</Text>
+          </View>
+          <View style={styles.counterDivider} />
+          <View style={styles.counterItem}>
+            <Text style={styles.counterVal}>
+              {requests.filter((r) => r.status === 'REJECTED').length}
+            </Text>
+            <Text style={styles.counterLabel}>Rejected</Text>
+          </View>
+        </View>
       </View>
 
       {/* Filter Tabs */}
@@ -384,6 +442,92 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 13,
   },
+  eligibilityCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CCFBF1',
+    borderRadius: 16,
+    padding: 16,
+    marginHorizontal: 20,
+    marginBottom: 12,
+    shadowColor: '#0D9488',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  eligibilityHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  policyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  eligibilityTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F766E',
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  badgeEligible: {
+    backgroundColor: '#D1FAE5',
+  },
+  badgeIneligible: {
+    backgroundColor: '#FEE2E2',
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  badgeTextEligible: {
+    color: '#065F46',
+  },
+  badgeTextIneligible: {
+    color: '#991B1B',
+  },
+  eligibilityDescription: {
+    fontSize: 12,
+    color: '#475569',
+    lineHeight: 17,
+    marginBottom: 12,
+  },
+  statCounters: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F0FDFA',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  counterItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  counterVal: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F766E',
+  },
+  counterLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#64748B',
+    marginTop: 2,
+  },
+  counterDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: '#CCFBF1',
+  },
   noticeBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -483,9 +627,18 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     marginTop: 6,
   },
+  footerDateCol: {
+    flexDirection: 'column',
+    gap: 2,
+  },
   footerDate: {
     fontSize: 11,
     color: '#94A3B8',
+  },
+  decisionDate: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#0D9488',
   },
   reqId: {
     fontSize: 11,
