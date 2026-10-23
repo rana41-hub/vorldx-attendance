@@ -1,6 +1,6 @@
 from datetime import datetime, time
 from typing import Optional
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.models.enums import AttendanceStatus
 
@@ -29,6 +29,14 @@ class AttendancePolicyUpdate(BaseModel):
     auto_detect_late_arrival: Optional[bool] = None
     auto_detect_early_departure: Optional[bool] = None
     is_active: Optional[bool] = None
+    reason: Optional[str] = Field(default=None, max_length=500, description="Reason for policy configuration update")
+
+    @model_validator(mode="after")
+    def validate_shift_times(self) -> "AttendancePolicyUpdate":
+        if self.work_start_time is not None and self.work_end_time is not None:
+            if self.work_start_time == self.work_end_time:
+                raise ValueError("Shift start time and end time cannot be identical.")
+        return self
 
 
 class AttendancePolicyResponse(AttendancePolicyBase):

@@ -1,6 +1,7 @@
 from datetime import date, datetime
 from typing import Optional
 from sqlalchemy import (
+    Boolean,
     Date,
     DateTime,
     Enum,
@@ -9,6 +10,7 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -48,6 +50,21 @@ class AttendanceRecord(Base):
         String(50),
         nullable=True,
         default="OFFICE_QR",
+    )
+    is_corrected: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default=text("false"),
+    )
+    corrected_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    corrected_by: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

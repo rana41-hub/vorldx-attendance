@@ -1,3 +1,4 @@
+import json
 from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -14,6 +15,7 @@ from app.dependencies.auth import (
 from app.dependencies.database import get_db
 from app.models.attendance import AttendanceRecord
 from app.models.attendance_policy import AttendancePolicy
+from app.models.audit_log import AuditLog
 from app.models.employee import Employee
 from app.models.enums import AttendanceStatus, LeaveStatus, UserRole, WFHStatus
 from app.models.leave import LeaveRequest
@@ -22,7 +24,9 @@ from app.models.wfh import WFHRequest
 from app.schemas.attendance import (
     AttendanceCheckInRequest,
     AttendanceCheckOutRequest,
+    AttendanceCorrectionRequest,
     AttendanceRecordResponse,
+    AuditLogResponse,
     EmployeeAttendanceStats,
     EmployeeDashboardResponse,
 )
@@ -229,7 +233,10 @@ def get_employee_dashboard(
                 eligible_working_days += 1
         curr_date += timedelta(days=1)
 
-    if eligible_working_days > 0:
+    if total_records == 0:
+        attendance_percentage = 100.0
+        formula_desc = "New employee baseline with no working weekdays elapsed."
+    elif eligible_working_days > 0:
         raw_pct = (attended_credits / eligible_working_days) * 100.0
         attendance_percentage = round(min(100.0, max(0.0, raw_pct)), 1)
         formula_desc = (
@@ -275,25 +282,47 @@ def get_employee_dashboard(
 
 @router.get("", response_model=list[AttendanceRecordResponse])
 def list_attendance(
-    attendance_date: Optional[date] = Query(None, description="Filter by date"),
+    attendance_date: Optional[date] = Query(None, description="Filter by exact date"),
+    start_date: Optional[date] = Query(None, description="Filter by start date (inclusive)"),
+    end_date: Optional[date] = Query(None, description="Filter by end date (inclusive)"),
     employee_id: Optional[int] = Query(None, description="Filter by employee ID"),
-    limit: int = Query(50, ge=1, le=100),
+    attendance_status: Optional[AttendanceStatus] = Query(None, alias="status", description="Filter by attendance status"),
+    limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
-    current_user: Optional[User] = Depends(get_optional_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    """
+    List attendance records with multi-dimensional filtering.
+    Enforces role-based isolation:
+    - Employees can only query their own attendance records.
+    - Administrators can query organization-wide or filter by employee.
+    """
     # Enforce employee data isolation if authenticated as EMPLOYEE
-    if current_user and current_user.role == UserRole.EMPLOYEE:
+    if current_user.role == UserRole.EMPLOYEE:
         caller_emp = current_user.employee
         if not caller_emp:
             return []
         employee_id = caller_emp.id
 
+    if start_date and end_date and start_date > end_date:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="start_date cannot be later than end_date.",
+        )
+
     query = select(AttendanceRecord)
     if attendance_date:
         query = query.where(AttendanceRecord.attendance_date == attendance_date)
+    if start_date:
+        query = query.where(AttendanceRecord.attendance_date >= start_date)
+    if end_date:
+        query = query.where(AttendanceRecord.attendance_date <= end_date)
     if employee_id:
         query = query.where(AttendanceRecord.employee_id == employee_id)
+    if attendance_status:
+        query = query.where(AttendanceRecord.status == attendance_status)
+
     query = (
         query.order_by(
             AttendanceRecord.attendance_date.desc(),
@@ -465,14 +494,50 @@ def update_policy(
     """
     Update the organization attendance policy.
     Restricted strictly to administrators.
+    Generates a persistent audit log atomically.
     """
     policy = get_active_policy(db)
+    previous_values = {
+        "policy_name": policy.policy_name,
+        "work_start_time": policy.work_start_time.isoformat() if policy.work_start_time else None,
+        "work_end_time": policy.work_end_time.isoformat() if policy.work_end_time else None,
+        "late_grace_minutes": policy.late_grace_minutes,
+        "early_departure_grace_minutes": policy.early_departure_grace_minutes,
+        "half_day_hours_threshold": float(policy.half_day_hours_threshold) if policy.half_day_hours_threshold is not None else None,
+        "full_day_hours_threshold": float(policy.full_day_hours_threshold) if policy.full_day_hours_threshold is not None else None,
+    }
+
+    reason = payload.reason or "Attendance policy configuration updated by administrator."
+
     update_data = payload.model_dump(exclude_unset=True)
+    update_data.pop("reason", None)
 
     for field, value in update_data.items():
         setattr(policy, field, value)
 
     policy.updated_by = current_admin.id
+
+    updated_values = {
+        "policy_name": policy.policy_name,
+        "work_start_time": policy.work_start_time.isoformat() if policy.work_start_time else None,
+        "work_end_time": policy.work_end_time.isoformat() if policy.work_end_time else None,
+        "late_grace_minutes": policy.late_grace_minutes,
+        "early_departure_grace_minutes": policy.early_departure_grace_minutes,
+        "half_day_hours_threshold": float(policy.half_day_hours_threshold) if policy.half_day_hours_threshold is not None else None,
+        "full_day_hours_threshold": float(policy.full_day_hours_threshold) if policy.full_day_hours_threshold is not None else None,
+    }
+
+    now_utc = datetime.now(timezone.utc)
+    audit_entry = AuditLog(
+        admin_id=current_admin.id,
+        action_type="POLICY_UPDATE",
+        policy_id=policy.id,
+        reason=reason,
+        previous_values=json.dumps(previous_values),
+        updated_values=json.dumps(updated_values),
+        created_at=now_utc,
+    )
+    db.add(audit_entry)
     db.commit()
     db.refresh(policy)
     return policy
@@ -512,3 +577,187 @@ def simulate_policy_calculation(
         is_early_departure=is_early,
         details=details,
     )
+
+
+@router.patch("/{record_id}/correct", response_model=AttendanceRecordResponse)
+def correct_attendance(
+    record_id: int,
+    payload: AttendanceCorrectionRequest,
+    current_admin: User = Depends(require_admin_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Administrative attendance correction endpoint.
+    Modifies check-in, check-out, or status with a mandatory audit reason.
+    Persists an immutable audit log record atomically with the change.
+    """
+    record = db.get(AttendanceRecord, record_id)
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Attendance record with ID {record_id} not found.",
+        )
+
+    # 1. Snapshot previous state before any mutation
+    previous_values = {
+        "attendance_date": record.attendance_date.isoformat() if record.attendance_date else None,
+        "check_in": record.check_in.isoformat() if record.check_in else None,
+        "check_out": record.check_out.isoformat() if record.check_out else None,
+        "status": record.status.value if record.status else None,
+        "is_corrected": record.is_corrected,
+    }
+
+    # 2. Determine target check-in and check-out timestamps
+    target_check_in = (
+        ensure_timezone_aware(payload.check_in)
+        if payload.check_in is not None
+        else record.check_in
+    )
+    target_check_out = (
+        ensure_timezone_aware(payload.check_out)
+        if payload.check_out is not None
+        else record.check_out
+    )
+
+    if target_check_in is not None and target_check_out is not None:
+        if target_check_out < target_check_in:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Check-out time cannot be earlier than check-in time.",
+            )
+
+    # 3. Update attendance date if check_in changed
+    if payload.check_in is not None:
+        new_date = to_organization_time(target_check_in).date()
+        if new_date != record.attendance_date:
+            # Check unique constraint (employee_id, attendance_date)
+            conflict = db.scalar(
+                select(AttendanceRecord).where(
+                    AttendanceRecord.employee_id == record.employee_id,
+                    AttendanceRecord.attendance_date == new_date,
+                    AttendanceRecord.id != record.id,
+                )
+            )
+            if conflict:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Employee already has another attendance record for date {new_date}.",
+                )
+            record.attendance_date = new_date
+        record.check_in = target_check_in
+
+    if payload.check_out is not None:
+        record.check_out = target_check_out
+
+    # 4. Status update
+    policy = get_active_policy(db)
+    if payload.status is not None:
+        record.status = payload.status
+    else:
+        # Re-evaluate status based on new check-in / check-out times
+        eval_res = evaluate_record_completion(record.check_in, record.check_out, policy, record.status)
+        record.status = eval_res.status
+
+    # 5. Set correction audit markers on attendance record
+    now_utc = datetime.now(timezone.utc)
+    record.is_corrected = True
+    record.corrected_at = now_utc
+    record.corrected_by = current_admin.id
+
+    updated_values = {
+        "attendance_date": record.attendance_date.isoformat() if record.attendance_date else None,
+        "check_in": record.check_in.isoformat() if record.check_in else None,
+        "check_out": record.check_out.isoformat() if record.check_out else None,
+        "status": record.status.value if record.status else None,
+        "is_corrected": True,
+    }
+
+    # 6. Create persistent audit log
+    audit_entry = AuditLog(
+        admin_id=current_admin.id,
+        action_type="ATTENDANCE_CORRECTION",
+        employee_id=record.employee_id,
+        attendance_record_id=record.id,
+        reason=payload.reason,
+        previous_values=json.dumps(previous_values),
+        updated_values=json.dumps(updated_values),
+        created_at=now_utc,
+    )
+    db.add(audit_entry)
+
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Database integrity conflict occurred while recording correction.",
+        )
+
+    db.refresh(record)
+
+    # 7. Formulate response with completion metadata
+    checkout_eval = evaluate_record_completion(
+        record.check_in, record.check_out, policy, record.status
+    )
+    resp = AttendanceRecordResponse.model_validate(record)
+    resp.hours_worked = checkout_eval.hours_worked
+    resp.session_state = checkout_eval.session_state
+    return resp
+
+
+@router.get("/audit-logs", response_model=list[AuditLogResponse])
+def list_audit_logs(
+    attendance_record_id: Optional[int] = Query(None, description="Filter by attendance record ID"),
+    employee_id: Optional[int] = Query(None, description="Filter by employee ID"),
+    action_type: Optional[str] = Query(None, description="Filter by action type"),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    current_admin: User = Depends(require_admin_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Retrieve audit trail for attendance corrections and policy adjustments.
+    Accessible exclusively to administrators.
+    """
+    query = select(AuditLog)
+    if attendance_record_id is not None:
+        query = query.where(AuditLog.attendance_record_id == attendance_record_id)
+    if employee_id is not None:
+        query = query.where(AuditLog.employee_id == employee_id)
+    if action_type is not None:
+        query = query.where(AuditLog.action_type == action_type)
+
+    query = query.order_by(AuditLog.created_at.desc(), AuditLog.id.desc()).offset(offset).limit(limit)
+    logs = db.scalars(query).all()
+
+    results = []
+    for log in logs:
+        admin_display = None
+        if log.admin:
+            admin_display = (
+                log.admin.employee.full_name
+                if log.admin.employee
+                else (log.admin.admin_id or log.admin.email)
+            )
+        emp_display = None
+        if log.employee:
+            emp_display = log.employee.full_name
+
+        results.append(
+            AuditLogResponse(
+                id=log.id,
+                admin_id=log.admin_id,
+                admin_name=admin_display,
+                action_type=log.action_type,
+                employee_id=log.employee_id,
+                employee_name=emp_display,
+                attendance_record_id=log.attendance_record_id,
+                policy_id=log.policy_id,
+                reason=log.reason,
+                previous_values=log.previous_values,
+                updated_values=log.updated_values,
+                created_at=log.created_at,
+            )
+        )
+    return results

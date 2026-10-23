@@ -68,7 +68,7 @@ export const KioskPage: React.FC = () => {
     setIsRotating(true);
     setErrorMessage(null);
     try {
-      const data = await api.rotateQRSession(officeCode, 30);
+      const data = await api.rotateQRSession(officeCode, 18);
       setSession(data);
       const expiryMs = new Date(data.expires_at).getTime();
       const diffSec = Math.max(0, Math.ceil((expiryMs - Date.now()) / 1000));
@@ -246,7 +246,7 @@ export const KioskPage: React.FC = () => {
             Scan to Record Attendance
           </h1>
           <p className="text-sm text-slate-400 max-w-md mx-auto">
-            Point your VorldX Employee Mobile App camera at the QR code below. Code automatically rotates every 30 seconds to prevent replay.
+            Point your VorldX Employee Mobile App camera at the QR code below. Code automatically rotates every 18 seconds to prevent replay.
           </p>
         </div>
 

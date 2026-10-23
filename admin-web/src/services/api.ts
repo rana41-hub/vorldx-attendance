@@ -1,8 +1,10 @@
 import type {
+  AttendanceCorrectionPayload,
   AttendancePolicy,
   AttendanceRecord,
   AttendanceSummaryResponse,
   AttendanceTrendsResponse,
+  AuditLog,
   BackendHealthResponse,
   DatabaseHealthResponse,
   DashboardMetricsResponse,
@@ -314,12 +316,62 @@ export const api = {
   },
 
   // Attendance
-  async getAttendance(date?: string, employeeId?: number): Promise<AttendanceRecord[]> {
+  async getAttendance(
+    filters?:
+      | {
+          date?: string;
+          employeeId?: number;
+          startDate?: string;
+          endDate?: string;
+          status?: string;
+          limit?: number;
+          offset?: number;
+        }
+      | string,
+    employeeIdParam?: number
+  ): Promise<AttendanceRecord[]> {
     const params = new URLSearchParams();
-    if (date) params.append('attendance_date', date);
-    if (employeeId) params.append('employee_id', String(employeeId));
+    if (typeof filters === 'string') {
+      if (filters) params.append('attendance_date', filters);
+      if (employeeIdParam) params.append('employee_id', String(employeeIdParam));
+    } else if (filters) {
+      if (filters.date) params.append('attendance_date', filters.date);
+      if (filters.employeeId) params.append('employee_id', String(filters.employeeId));
+      if (filters.startDate) params.append('start_date', filters.startDate);
+      if (filters.endDate) params.append('end_date', filters.endDate);
+      if (filters.status && filters.status !== 'ALL') params.append('status', filters.status);
+      if (filters.limit) params.append('limit', String(filters.limit));
+      if (filters.offset) params.append('offset', String(filters.offset));
+    }
     const query = params.toString() ? `?${params.toString()}` : '';
     return request<AttendanceRecord[]>(`/api/v1/attendance${query}`);
+  },
+
+  async correctAttendance(
+    recordId: number,
+    payload: AttendanceCorrectionPayload
+  ): Promise<AttendanceRecord> {
+    return request<AttendanceRecord>(`/api/v1/attendance/${recordId}/correct`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async getAttendanceAuditLogs(params?: {
+    attendanceRecordId?: number;
+    employeeId?: number;
+    actionType?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<AuditLog[]> {
+    const q = new URLSearchParams();
+    if (params?.attendanceRecordId) q.append('attendance_record_id', String(params.attendanceRecordId));
+    if (params?.employeeId) q.append('employee_id', String(params.employeeId));
+    if (params?.actionType) q.append('action_type', params.actionType);
+    if (params?.limit) q.append('limit', String(params.limit));
+    if (params?.offset) q.append('offset', String(params.offset));
+    const query = q.toString() ? `?${q.toString()}` : '';
+    return request<AuditLog[]>(`/api/v1/attendance/audit-logs${query}`);
   },
 
   async recordCheckIn(
@@ -345,7 +397,7 @@ export const api = {
     return request<AttendancePolicy>('/api/v1/attendance/policy');
   },
 
-  async updatePolicy(data: Partial<AttendancePolicy>): Promise<AttendancePolicy> {
+  async updatePolicy(data: Partial<AttendancePolicy> & { reason?: string }): Promise<AttendancePolicy> {
     return request<AttendancePolicy>('/api/v1/attendance/policy', {
       method: 'PUT',
       body: JSON.stringify(data),

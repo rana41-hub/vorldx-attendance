@@ -101,7 +101,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ health }) => {
               <div className="font-medium text-slate-900">QR Challenge Expiration</div>
               <div className="text-[11px] text-slate-500">Dynamic office display QR token lifetime</div>
             </div>
-            <span className="font-mono px-2.5 py-1 bg-slate-100 rounded text-slate-800">30 Seconds</span>
+            <span className="font-mono px-2.5 py-1 bg-slate-100 rounded text-slate-800">18 Seconds</span>
           </div>
 
           <div className="flex items-center justify-between py-2">

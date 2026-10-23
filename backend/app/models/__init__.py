@@ -1,6 +1,7 @@
 from app.database import Base
 from app.models.attendance import AttendanceRecord
 from app.models.attendance_policy import AttendancePolicy
+from app.models.audit_log import AuditLog
 from app.models.employee import Employee
 from app.models.enums import AttendanceStatus, LeaveStatus, UserRole, WFHStatus
 from app.models.leave import LeaveRequest
@@ -14,6 +15,7 @@ __all__ = [
     "Employee",
     "AttendanceRecord",
     "AttendancePolicy",
+    "AuditLog",
     "LeaveRequest",
     "WFHRequest",
     "QRSession",

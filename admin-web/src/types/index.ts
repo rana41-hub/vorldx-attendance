@@ -64,6 +64,9 @@ export interface AttendanceRecord {
   department?: string;
   hours_worked?: number | null;
   session_state?: string | null;
+  is_corrected?: boolean;
+  corrected_at?: string | null;
+  corrected_by?: number | null;
 }
 
 export interface LeaveRequest {
@@ -175,4 +178,27 @@ export interface QRSession {
   remaining_seconds: number;
   is_active: boolean;
 }
+
+export interface AuditLog {
+  id: number;
+  admin_id?: number | null;
+  admin_name?: string | null;
+  action_type: string;
+  employee_id?: number | null;
+  employee_name?: string | null;
+  attendance_record_id?: number | null;
+  policy_id?: number | null;
+  reason: string;
+  previous_values?: Record<string, unknown> | null;
+  updated_values?: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface AttendanceCorrectionPayload {
+  check_in?: string | null;
+  check_out?: string | null;
+  status?: 'PRESENT' | 'LATE' | 'HALF_DAY' | 'ABSENT' | null;
+  reason: string;
+}
+
 

@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from typing import Optional
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.models.enums import AttendanceStatus
 
@@ -24,6 +24,21 @@ class AttendanceCheckOutRequest(BaseModel):
     timestamp: Optional[datetime] = None
 
 
+class AttendanceCorrectionRequest(BaseModel):
+    check_in: Optional[datetime] = None
+    check_out: Optional[datetime] = None
+    status: Optional[AttendanceStatus] = None
+    reason: str = Field(min_length=3, max_length=500, description="Mandatory reason for administrative correction")
+
+    @field_validator("reason")
+    @classmethod
+    def validate_reason_not_empty(cls, v: str) -> str:
+        trimmed = v.strip()
+        if len(trimmed) < 3:
+            raise ValueError("Correction reason must contain at least 3 non-whitespace characters.")
+        return trimmed
+
+
 class AttendanceRecordResponse(AttendanceRecordBase):
     id: int
     check_in: datetime
@@ -31,8 +46,39 @@ class AttendanceRecordResponse(AttendanceRecordBase):
     created_at: datetime
     hours_worked: Optional[float] = None
     session_state: Optional[str] = None
+    is_corrected: bool = False
+    corrected_at: Optional[datetime] = None
+    corrected_by: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class AuditLogResponse(BaseModel):
+    id: int
+    admin_id: Optional[int] = None
+    admin_name: Optional[str] = None
+    action_type: str
+    employee_id: Optional[int] = None
+    employee_name: Optional[str] = None
+    attendance_record_id: Optional[int] = None
+    policy_id: Optional[int] = None
+    reason: str
+    previous_values: Optional[dict] = None
+    updated_values: Optional[dict] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_validator("previous_values", "updated_values", mode="before")
+    @classmethod
+    def parse_json_string(cls, v):
+        if isinstance(v, str):
+            try:
+                import json
+                return json.loads(v)
+            except Exception:
+                return None
+        return v
 
 
 class EmployeeAttendanceStats(BaseModel):

@@ -25,6 +25,7 @@ export const PolicyPage: React.FC = () => {
     auto_detect_early_departure: false,
   });
 
+  const [updateReason, setUpdateReason] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,9 +82,11 @@ export const PolicyPage: React.FC = () => {
         early_departure_grace_minutes: Number(formData.early_departure_grace_minutes),
         half_day_hours_threshold: Number(formData.half_day_hours_threshold),
         full_day_hours_threshold: Number(formData.full_day_hours_threshold),
+        reason: updateReason.trim() || undefined,
       });
       setPolicy(updated);
-      setSuccess('Attendance policy parameters updated and committed successfully.');
+      setSuccess('Attendance policy parameters updated and persistent audit log created.');
+      setUpdateReason('');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Error updating attendance policy.');
     } finally {
@@ -312,6 +315,20 @@ export const PolicyPage: React.FC = () => {
               </p>
             </div>
           </label>
+        </div>
+
+        {/* Reason for Policy Update */}
+        <div className="pt-2 border-t border-slate-100">
+          <label className="block text-xs font-semibold text-slate-700 mb-1">
+            Reason for Policy Change (Recorded in Persistent Audit Log)
+          </label>
+          <input
+            type="text"
+            value={updateReason}
+            onChange={(e) => setUpdateReason(e.target.value)}
+            placeholder="e.g., Seasonal grace period adjustment, company-wide working hours alignment..."
+            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+          />
         </div>
 
         <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">

@@ -158,23 +158,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
     };
   }, [loadStats, refreshTodayStatus]);
 
-  const handleQuickCheckIn = async (source: string = 'OFFICE_STATION') => {
-    if (!currentEmployee) {
-      showToast('No active employee session found', 'error');
-      return;
-    }
-    setIsSubmitting(true);
-    try {
-      await ApiService.checkIn(currentEmployee.id, source);
-      showToast(`Check-in recorded successfully via ${source}!`, 'success');
-      await refreshTodayStatus();
-      await loadStats();
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Check-in failed', 'error');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const handleCheckOut = async () => {
     if (!currentEmployee) return;
@@ -360,7 +343,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
           <View style={styles.unmarkedBox}>
             <Text style={styles.unmarkedTitle}>Not Checked In Today</Text>
             <Text style={styles.unmarkedSubtitle}>
-              You have not recorded attendance yet today. Check in using the official QR code or workstation button below.
+              You have not recorded attendance yet today. Please scan the active dynamic QR kiosk at your office reception to record presence.
             </Text>
 
             {/* Primary Check-In Action Button */}
@@ -372,25 +355,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
             >
               <Ionicons name="qr-code-outline" size={22} color="#FFFFFF" />
               <Text style={styles.primaryCheckinBtnText}>Check In (Scan Office QR)</Text>
-            </TouchableOpacity>
-
-            {/* Secondary Instant Station Check-In Button */}
-            <TouchableOpacity
-              style={[styles.secondaryCheckinBtn, isSubmitting && styles.btnDisabled]}
-              onPress={() => handleQuickCheckIn('OFFICE_STATION')}
-              disabled={isSubmitting}
-              activeOpacity={0.7}
-            >
-              {isSubmitting ? (
-                <ActivityIndicator color="#4F46E5" size="small" />
-              ) : (
-                <>
-                  <Ionicons name="flash-outline" size={16} color="#4F46E5" />
-                  <Text style={styles.secondaryCheckinBtnText}>
-                    Instant Station Check-In
-                  </Text>
-                </>
-              )}
             </TouchableOpacity>
           </View>
         )}
@@ -796,23 +760,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
-  },
-  secondaryCheckinBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#EEF2FF',
-    width: '100%',
-    borderRadius: 12,
-    paddingVertical: 12,
-    gap: 6,
-    borderWidth: 1,
-    borderColor: '#C7D2FE',
-  },
-  secondaryCheckinBtnText: {
-    color: '#4F46E5',
-    fontSize: 13,
-    fontWeight: '600',
   },
   btnDisabled: {
     opacity: 0.6,

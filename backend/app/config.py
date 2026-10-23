@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     DEFAULT_SHIFT_DURATION_HOURS: float = Field(default=8.0)
 
     # Dynamic QR Code configuration (seconds)
-    QR_CODE_EXPIRATION_SECONDS: int = Field(default=30)
+    QR_CODE_EXPIRATION_SECONDS: int = Field(default=18)
 
     # JWT Authentication configuration
     JWT_SECRET_KEY: str = Field(
