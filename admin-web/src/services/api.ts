@@ -313,6 +313,45 @@ export const api = {
     window.URL.revokeObjectURL(downloadUrl);
   },
 
+  async downloadAttendanceXLSX(
+    startDate: string,
+    endDate: string,
+    department?: string,
+    status?: string
+  ): Promise<void> {
+    const params = new URLSearchParams({
+      start_date: startDate,
+      end_date: endDate,
+    });
+    if (department && department !== 'ALL') params.append('department', department);
+    if (status && status !== 'ALL') params.append('status', status);
+
+    const token = getStoredToken();
+    const url = `${BASE_URL.replace(/\/+$/, '')}/api/v1/analytics/export/attendance.xlsx?${params.toString()}`;
+
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => 'Download failed');
+      throw new ApiError(res.status, `Export failed: ${errText}`);
+    }
+
+    const blob = await res.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = `attendance_report_${startDate}_to_${endDate}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(downloadUrl);
+  },
+
   // Employees
   async getEmployees(department?: string): Promise<Employee[]> {
     const query = department ? `?department=${encodeURIComponent(department)}` : '';

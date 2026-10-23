@@ -407,6 +407,7 @@ def test_reporting_rbac_security_all_endpoints(client):
         "/api/v1/analytics/summary?start_date=2026-01-01&end_date=2026-01-02",
         "/api/v1/analytics/trends",
         "/api/v1/analytics/export/attendance.csv?start_date=2026-01-01&end_date=2026-01-02",
+        "/api/v1/analytics/export/attendance.xlsx?start_date=2026-01-01&end_date=2026-01-02",
     ]
 
     for ep in endpoints:
@@ -414,3 +415,119 @@ def test_reporting_rbac_security_all_endpoints(client):
         assert client.get(ep).status_code == 401, f"Failed 401 check on {ep}"
         # Employee token: 403
         assert client.get(ep, headers=emp["headers"]).status_code == 403, f"Failed 403 check on {ep}"
+
+
+# ==============================================================================
+# 6. Native Excel (.xlsx) Export Tests
+# ==============================================================================
+
+def test_xlsx_export_structure_styling_and_column_widths(client):
+    """
+    Verify native Excel (.xlsx) export:
+    1. Returns valid openpyxl-loadable spreadsheet.
+    2. Column widths are pre-configured (e.g. 22 for timestamps) to permanently prevent '########'.
+    3. Freeze panes is set to A2.
+    4. Auto-filters are enabled on headers.
+    5. Native date/time and numeric formatting are applied.
+    """
+    import openpyxl
+    admin = get_admin_auth(client)
+    res = client.get(
+        "/api/v1/analytics/export/attendance.xlsx?start_date=2026-08-01&end_date=2026-08-15",
+        headers=admin["headers"],
+    )
+    assert res.status_code == 200
+    assert "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" in res.headers["content-type"]
+    assert "attachment; filename=" in res.headers["content-disposition"]
+    assert res.headers["content-disposition"].endswith('.xlsx"')
+
+    wb = openpyxl.load_workbook(io.BytesIO(res.content))
+    ws = wb.active
+    assert ws.title == "Attendance Records"
+
+    # Header values
+    headers = [cell.value for cell in ws[1]]
+    expected_headers = [
+        "Employee ID", "Employee Code", "Employee Name", "Department",
+        "Attendance Date", "Check In", "Check Out", "Duration (Hours)",
+        "Status", "Is Corrected", "Correction Reason"
+    ]
+    assert headers == expected_headers
+
+    # Column widths (generous enough to completely eliminate '########' in Excel)
+    assert ws.column_dimensions["E"].width == 18.0  # Attendance Date
+    assert ws.column_dimensions["F"].width == 22.0  # Check In
+    assert ws.column_dimensions["G"].width == 22.0  # Check Out
+    assert ws.column_dimensions["H"].width == 18.0  # Duration
+    assert ws.column_dimensions["K"].width == 32.0  # Reason
+
+    # Header freeze panes and auto-filter
+    assert ws.freeze_panes == "A2"
+    assert ws.auto_filter.ref is not None
+
+    # Verify rows and cell formats
+    assert ws.max_row >= 2
+    # Check In cell (col 6) number format
+    check_in_cell = ws.cell(row=2, column=6)
+    if check_in_cell.value:
+        assert isinstance(check_in_cell.value, datetime)
+        assert check_in_cell.number_format == "yyyy-mm-dd hh:mm:ss"
+
+    # Duration cell (col 8) number format
+    duration_cell = ws.cell(row=2, column=8)
+    if duration_cell.value is not None:
+        assert isinstance(duration_cell.value, (int, float))
+        assert duration_cell.number_format == "0.00"
+
+
+def test_xlsx_export_combined_department_and_status_filters(client):
+    """Verify that Department=Engineering and Status=PRESENT filters work identically on .xlsx export."""
+    import openpyxl
+    admin = get_admin_auth(client)
+    res = client.get(
+        "/api/v1/analytics/export/attendance.xlsx?start_date=2026-09-01&end_date=2026-10-23&department=Engineering&status=PRESENT",
+        headers=admin["headers"],
+    )
+    assert res.status_code == 200
+    wb = openpyxl.load_workbook(io.BytesIO(res.content))
+    ws = wb.active
+
+    headers = [cell.value for cell in ws[1]]
+    dept_col = headers.index("Department") + 1
+    stat_col = headers.index("Status") + 1
+
+    assert ws.max_row >= 2
+    for row_num in range(2, ws.max_row + 1):
+        assert ws.cell(row=row_num, column=dept_col).value == "Engineering"
+        assert ws.cell(row=row_num, column=stat_col).value == "PRESENT"
+
+
+def test_xlsx_export_empty_results_and_validations(client):
+    """Empty result intervals export a valid empty Excel workbook with headers, and validations reject invalid ranges."""
+    import openpyxl
+    admin = get_admin_auth(client)
+
+    # Empty result
+    res = client.get(
+        "/api/v1/analytics/export/attendance.xlsx?start_date=2029-01-01&end_date=2029-01-02",
+        headers=admin["headers"],
+    )
+    assert res.status_code == 200
+    wb = openpyxl.load_workbook(io.BytesIO(res.content))
+    ws = wb.active
+    assert ws.max_row == 1
+    assert [c.value for c in ws[1]][0] == "Employee ID"
+
+    # Invalid date range (start > end)
+    res_bad_range = client.get(
+        "/api/v1/analytics/export/attendance.xlsx?start_date=2026-10-23&end_date=2026-10-01",
+        headers=admin["headers"],
+    )
+    assert res_bad_range.status_code in (400, 422)
+
+    # Exceeding 366 days
+    res_too_long = client.get(
+        "/api/v1/analytics/export/attendance.xlsx?start_date=2025-01-01&end_date=2026-06-01",
+        headers=admin["headers"],
+    )
+    assert res_too_long.status_code in (400, 422)

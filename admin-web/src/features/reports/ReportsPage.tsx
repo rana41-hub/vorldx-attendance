@@ -82,7 +82,8 @@ export const ReportsPage: React.FC = () => {
   // UI state
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isExporting, setIsExporting] = useState(false);
+  const [isExportingCSV, setIsExportingCSV] = useState(false);
+  const [isExportingXLSX, setIsExportingXLSX] = useState(false);
   const [exportSuccess, setExportSuccess] = useState<string | null>(null);
 
   // Load available departments for filtering
@@ -161,7 +162,7 @@ export const ReportsPage: React.FC = () => {
       return;
     }
 
-    setIsExporting(true);
+    setIsExportingCSV(true);
     setExportSuccess(null);
     setError(null);
     try {
@@ -172,7 +173,7 @@ export const ReportsPage: React.FC = () => {
         exportStatus !== 'ALL' ? exportStatus : undefined
       );
       setExportSuccess(
-        `CSV export downloaded successfully for interval ${startDate} to ${endDate}.`
+        `CSV timesheet downloaded successfully for interval ${startDate} to ${endDate}.`
       );
       setTimeout(() => setExportSuccess(null), 5000);
     } catch (err) {
@@ -182,7 +183,38 @@ export const ReportsPage: React.FC = () => {
         setError('Failed to download attendance CSV.');
       }
     } finally {
-      setIsExporting(false);
+      setIsExportingCSV(false);
+    }
+  };
+
+  const handleExportXLSX = async () => {
+    if (endDate < startDate) {
+      setError('Export failed: Start date cannot be after end date.');
+      return;
+    }
+
+    setIsExportingXLSX(true);
+    setExportSuccess(null);
+    setError(null);
+    try {
+      await api.downloadAttendanceXLSX(
+        startDate,
+        endDate,
+        exportDept !== 'ALL' ? exportDept : undefined,
+        exportStatus !== 'ALL' ? exportStatus : undefined
+      );
+      setExportSuccess(
+        `Native Excel (.xlsx) spreadsheet downloaded successfully for interval ${startDate} to ${endDate}.`
+      );
+      setTimeout(() => setExportSuccess(null), 5000);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError('Failed to download Excel spreadsheet.');
+      }
+    } finally {
+      setIsExportingXLSX(false);
     }
   };
 
@@ -209,12 +241,22 @@ export const ReportsPage: React.FC = () => {
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
           <button
+            onClick={handleExportXLSX}
+            disabled={isExportingXLSX || isExportingCSV}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
+            title="Download formatted Excel spreadsheet with optimal column widths and frozen headers"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            <span>{isExportingXLSX ? 'Exporting Excel...' : 'Export Excel (.xlsx)'}</span>
+          </button>
+          <button
             onClick={handleExportCSV}
-            disabled={isExporting}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
+            disabled={isExportingCSV || isExportingXLSX}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold shadow-xs transition-colors disabled:opacity-50 cursor-pointer border border-slate-200"
+            title="Download raw CSV timesheet"
           >
             <Download className="w-4 h-4" />
-            <span>{isExporting ? 'Generating CSV...' : 'Export Timesheet CSV'}</span>
+            <span>{isExportingCSV ? 'Exporting CSV...' : 'Export CSV'}</span>
           </button>
         </div>
       </div>
@@ -829,7 +871,7 @@ export const ReportsPage: React.FC = () => {
         </div>
       )}
 
-      {/* SECTION 6: CSV EXPORT DETAILS & TARGETED FILTERS */}
+      {/* SECTION 6: EXCEL & CSV EXPORT WITH TARGETED FILTERS */}
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-3">
           <div className="flex items-center gap-3">
@@ -837,21 +879,33 @@ export const ReportsPage: React.FC = () => {
               <FileSpreadsheet className="w-5 h-5" />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-slate-900">Download Attendance Records (CSV)</h4>
+              <h4 className="text-sm font-bold text-slate-900">Export Attendance Records (Excel & CSV)</h4>
               <p className="text-xs text-slate-500 mt-0.5">
-                Streaming export with formula-injection neutralization, UTF-8 encoding, and audit notes
+                Download formatted Excel spreadsheet (native widths, frozen headers) or raw streaming CSV
               </p>
             </div>
           </div>
 
-          <button
-            onClick={handleExportCSV}
-            disabled={isExporting}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
-          >
-            <Download className="w-4 h-4" />
-            <span>{isExporting ? 'Preparing CSV...' : 'Download Period CSV'}</span>
-          </button>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button
+              onClick={handleExportXLSX}
+              disabled={isExportingXLSX || isExportingCSV}
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
+              title="Download native Excel (.xlsx) file with pre-configured column widths (no ########)"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              <span>{isExportingXLSX ? 'Preparing Excel...' : 'Download Excel (.xlsx)'}</span>
+            </button>
+            <button
+              onClick={handleExportCSV}
+              disabled={isExportingCSV || isExportingXLSX}
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold shadow-xs transition-colors disabled:opacity-50 cursor-pointer border border-slate-200"
+              title="Download raw streaming CSV timesheet"
+            >
+              <Download className="w-4 h-4" />
+              <span>{isExportingCSV ? 'Preparing CSV...' : 'Download CSV (.csv)'}</span>
+            </button>
+          </div>
         </div>
 
         {/* Targeted Export Filters */}
@@ -912,11 +966,21 @@ export const ReportsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Excel AutoFit Guidance */}
-        <div className="rounded-lg bg-slate-50 border border-slate-200 p-3 flex items-start gap-2.5 text-xs text-slate-600">
-          <Info className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
-          <div className="leading-relaxed">
-            <span className="font-semibold text-slate-800">Microsoft Excel Tip:</span> If date and timestamp columns appear as <code className="bg-slate-200/70 text-slate-800 px-1 py-0.5 rounded font-mono text-[11px]">########</code> when opening this CSV, Excel's default column width (8.43 characters) is simply narrower than the 19-character timestamp (<code className="bg-slate-200/70 text-slate-800 px-1 py-0.5 rounded font-mono text-[11px]">YYYY-MM-DD HH:MM:SS</code>). Simply double-click the column boundary or press <kbd className="bg-white border border-slate-300 rounded px-1 text-[10px] font-sans">Ctrl+A</kbd> then <kbd className="bg-white border border-slate-300 rounded px-1 text-[10px] font-sans">Alt+H+O+I</kbd> in Excel to AutoFit all column widths.
+        {/* Excel & CSV Format Guidance */}
+        <div className="rounded-lg bg-slate-50 border border-slate-200 p-3.5 space-y-2 text-xs text-slate-600">
+          <div className="flex items-start gap-2.5">
+            <Info className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+            <div className="leading-relaxed space-y-1.5">
+              <span className="font-semibold text-slate-800">Export Format Guidance:</span>
+              <ul className="list-disc list-inside space-y-1 text-slate-600">
+                <li>
+                  <strong className="text-slate-800">Native Excel (.xlsx) [Recommended]:</strong> Opens directly in Microsoft Excel with generous pre-configured column widths (22 chars for timestamps), completely eliminating <code className="bg-slate-200/70 text-slate-800 px-1 py-0.5 rounded font-mono text-[11px]">########</code>. Headers are frozen and auto-filters are pre-applied.
+                </li>
+                <li>
+                  <strong className="text-slate-800">Standard CSV (.csv):</strong> RFC 4180 streaming text format for ETL pipelines, scripts, and database imports. Standard CSV does not store column widths. If opening in Excel, press <kbd className="bg-white border border-slate-300 rounded px-1 text-[10px] font-sans">Ctrl+A</kbd> then <kbd className="bg-white border border-slate-300 rounded px-1 text-[10px] font-sans">Alt+H+O+I</kbd> (or double-click column boundaries) to AutoFit.
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>

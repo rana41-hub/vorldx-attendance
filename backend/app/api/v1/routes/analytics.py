@@ -676,6 +676,193 @@ def export_attendance_csv(
     )
 
 
+@router.get("/export/attendance.xlsx")
+def export_attendance_xlsx(
+    start_date: date = Query(..., description="Start date of export window (inclusive)"),
+    end_date: date = Query(..., description="End date of export window (inclusive)"),
+    department: Optional[str] = Query(None, description="Optional department filter"),
+    status_filter: Optional[AttendanceStatus] = Query(None, alias="status", description="Optional attendance status filter"),
+    current_admin: User = Depends(require_admin_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Export attendance records as a native Microsoft Excel (.xlsx) file.
+    Includes custom column widths, bold formatted headers, frozen top pane,
+    auto-filtering, and native date/time cell formatting (permanently preventing '########' display in Excel).
+    """
+    if end_date < start_date:
+        err_status = (
+            status.HTTP_422_UNPROCESSABLE_CONTENT
+            if hasattr(status, "HTTP_422_UNPROCESSABLE_CONTENT")
+            else 422
+        )
+        raise HTTPException(
+            status_code=err_status,
+            detail="End date cannot be earlier than start date.",
+        )
+
+    if (end_date - start_date).days > 366:
+        err_status = (
+            status.HTTP_422_UNPROCESSABLE_CONTENT
+            if hasattr(status, "HTTP_422_UNPROCESSABLE_CONTENT")
+            else 422
+        )
+        raise HTTPException(
+            status_code=err_status,
+            detail="Export range cannot exceed 366 days.",
+        )
+
+    active_ids = get_active_employee_ids(db)
+    headers = [
+        "Employee ID",
+        "Employee Code",
+        "Employee Name",
+        "Department",
+        "Attendance Date",
+        "Check In",
+        "Check Out",
+        "Duration (Hours)",
+        "Status",
+        "Is Corrected",
+        "Correction Reason",
+    ]
+
+    import openpyxl
+    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Attendance Records"
+
+    # Write and style header row
+    ws.append(headers)
+    header_font = Font(name="Calibri", size=11, bold=True, color="0F172A")
+    header_fill = PatternFill(start_color="F1F5F9", end_color="F1F5F9", fill_type="solid")
+    bottom_border = Border(bottom=Side(style="medium", color="CBD5E1"))
+
+    for cell in ws[1]:
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(vertical="center", horizontal="left")
+        cell.border = bottom_border
+
+    # Configure optimal column widths to permanently prevent '########' in Excel
+    col_widths = {
+        "A": 14,  # Employee ID
+        "B": 16,  # Employee Code
+        "C": 24,  # Employee Name
+        "D": 20,  # Department
+        "E": 18,  # Attendance Date
+        "F": 22,  # Check In
+        "G": 22,  # Check Out
+        "H": 18,  # Duration (Hours)
+        "I": 14,  # Status
+        "J": 14,  # Is Corrected
+        "K": 32,  # Correction Reason
+    }
+    for col_letter, width in col_widths.items():
+        ws.column_dimensions[col_letter].width = width
+
+    ws.freeze_panes = "A2"
+
+    if active_ids:
+        query = (
+            select(AttendanceRecord, Employee)
+            .join(Employee, AttendanceRecord.employee_id == Employee.id)
+            .where(
+                AttendanceRecord.attendance_date >= start_date,
+                AttendanceRecord.attendance_date <= end_date,
+                AttendanceRecord.employee_id.in_(active_ids),
+            )
+        )
+
+        if department:
+            query = query.where(Employee.department == department)
+        if status_filter:
+            query = query.where(AttendanceRecord.status == status_filter)
+
+        query = query.order_by(
+            AttendanceRecord.attendance_date.desc(),
+            Employee.employee_code.asc(),
+        )
+        rows = db.execute(query).all()
+
+        corrected_record_ids = [rec.id for rec, _ in rows if getattr(rec, "is_corrected", False)]
+        reasons_by_record_id: dict[int, str] = {}
+        if corrected_record_ids:
+            audit_logs = db.scalars(
+                select(AuditLog).where(
+                    AuditLog.attendance_record_id.in_(corrected_record_ids),
+                    AuditLog.action_type.in_(["CORRECTION", "ATTENDANCE_CORRECTION", "CORRECTION_UPDATE"]),
+                ).order_by(AuditLog.id.desc())
+            ).all()
+            for log in audit_logs:
+                if log.attendance_record_id and log.attendance_record_id not in reasons_by_record_id:
+                    reasons_by_record_id[log.attendance_record_id] = log.reason
+
+        row_idx = 2
+        for rec, emp in rows:
+            check_in_dt = (
+                to_shift_organization_time(rec.check_in).replace(tzinfo=None)
+                if rec.check_in
+                else None
+            )
+            check_out_dt = (
+                to_shift_organization_time(rec.check_out).replace(tzinfo=None)
+                if rec.check_out
+                else None
+            )
+            duration_val: Optional[float] = None
+            if rec.check_in and rec.check_out:
+                diff = (rec.check_out - rec.check_in).total_seconds()
+                duration_val = round(max(0.0, diff) / 3600.0, 2)
+
+            is_corr = "Yes" if getattr(rec, "is_corrected", False) else "No"
+            reason = reasons_by_record_id.get(rec.id, "")
+
+            ws.append([
+                emp.id,
+                sanitize_csv_cell(emp.employee_code),
+                sanitize_csv_cell(f"{emp.first_name} {emp.last_name}"),
+                sanitize_csv_cell(emp.department or ""),
+                rec.attendance_date,
+                check_in_dt,
+                check_out_dt,
+                duration_val,
+                rec.status.value if hasattr(rec.status, "value") else str(rec.status),
+                is_corr,
+                sanitize_csv_cell(reason),
+            ])
+
+            # Apply date/time and numeric formatting
+            ws.cell(row=row_idx, column=5).number_format = "yyyy-mm-dd"
+            if check_in_dt:
+                ws.cell(row=row_idx, column=6).number_format = "yyyy-mm-dd hh:mm:ss"
+            if check_out_dt:
+                ws.cell(row=row_idx, column=7).number_format = "yyyy-mm-dd hh:mm:ss"
+            if duration_val is not None:
+                ws.cell(row=row_idx, column=8).number_format = "0.00"
+
+            row_idx += 1
+
+        total_rows = len(rows)
+    else:
+        total_rows = 0
+
+    ws.auto_filter.ref = f"A1:K{max(1, total_rows + 1)}"
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    filename = f"attendance_report_{start_date}_to_{end_date}.xlsx"
+    return StreamingResponse(
+        io.BytesIO(output.getvalue()),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @router.get("/summary", response_model=AttendanceSummaryResponse)
 def get_attendance_summary(
     start_date: date = Query(..., description="Start date of the summary window"),
