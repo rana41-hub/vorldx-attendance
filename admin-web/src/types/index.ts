@@ -132,8 +132,85 @@ export interface DashboardMetricsResponse {
   wfh_today: number;
   half_day_today: number;
   late_today: number;
+  incomplete_today?: number;
+  attendance_percentage?: number;
   pending_leave_requests: number;
   pending_wfh_requests: number;
+}
+
+export interface DailyAttendanceReportResponse {
+  report_date: string;
+  total_active_employees: number;
+  eligible_employees: number;
+  present_count: number;
+  late_count: number;
+  half_day_count: number;
+  total_attended: number;
+  incomplete_count: number;
+  on_leave_count: number;
+  wfh_count: number;
+  absent_count: number;
+  attended_eligible_count?: number;
+  wfh_remote_count?: number;
+  attended_wfh_count?: number;
+  attendance_percentage: number;
+  definitions: Record<string, string>;
+}
+
+export interface LateAttendanceItem {
+  record_id: number;
+  employee_id: number;
+  employee_code: string;
+  employee_name: string;
+  department: string;
+  attendance_date: string;
+  check_in: string;
+  check_out?: string | null;
+  minutes_late?: number | null;
+  status: 'PRESENT' | 'LATE' | 'HALF_DAY' | 'ABSENT';
+  is_corrected: boolean;
+  source?: string | null;
+}
+
+export interface LateAttendanceReportResponse {
+  start_date: string;
+  end_date: string;
+  total_late_records: number;
+  total_attendance_records: number;
+  late_percentage: number;
+  shift_start_time: string;
+  late_grace_minutes: number;
+  records: LateAttendanceItem[];
+}
+
+export interface WFHReportItem {
+  id: number;
+  employee_id: number;
+  employee_code: string;
+  employee_name: string;
+  department: string;
+  start_date: string;
+  end_date: string;
+  days_count: number;
+  reason: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+  submitted_at: string;
+  reviewed_at?: string | null;
+  reviewer_id?: number | null;
+  reviewer_name?: string | null;
+}
+
+export interface WFHReportResponse {
+  start_date: string;
+  end_date: string;
+  filter_by: string;
+  total_requests: number;
+  pending_requests: number;
+  approved_requests: number;
+  rejected_requests: number;
+  cancelled_requests: number;
+  total_approved_wfh_days: number;
+  requests: WFHReportItem[];
 }
 
 export interface AttendanceSummaryResponse {

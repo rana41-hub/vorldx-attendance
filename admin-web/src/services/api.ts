@@ -7,14 +7,17 @@ import type {
   AuditLog,
   BackendHealthResponse,
   DatabaseHealthResponse,
+  DailyAttendanceReportResponse,
   DashboardMetricsResponse,
   Employee,
+  LateAttendanceReportResponse,
   LeaveRequest,
   LoginResponse,
   PolicyCalculationResponse,
   QRSession,
   SystemHealth,
   User,
+  WFHReportResponse,
   WFHRequest,
 } from '../types';
 
@@ -240,6 +243,74 @@ export const api = {
     if (endDate) params.append('end_date', endDate);
     const query = params.toString() ? `?${params.toString()}` : '';
     return request<AttendanceTrendsResponse>(`/api/v1/analytics/trends${query}`);
+  },
+
+  async getDailyAttendanceReport(reportDate?: string): Promise<DailyAttendanceReportResponse> {
+    const query = reportDate ? `?report_date=${encodeURIComponent(reportDate)}` : '';
+    return request<DailyAttendanceReportResponse>(`/api/v1/analytics/daily${query}`);
+  },
+
+  async getLateAttendanceReport(
+    startDate?: string,
+    endDate?: string
+  ): Promise<LateAttendanceReportResponse> {
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return request<LateAttendanceReportResponse>(`/api/v1/analytics/late-report${query}`);
+  },
+
+  async getWFHReport(
+    startDate?: string,
+    endDate?: string,
+    filterBy: 'target_date' | 'submission_date' = 'target_date',
+    status?: string
+  ): Promise<WFHReportResponse> {
+    const params = new URLSearchParams({ filter_by: filterBy });
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    if (status && status !== 'ALL') params.append('status', status);
+    return request<WFHReportResponse>(`/api/v1/analytics/wfh-report?${params.toString()}`);
+  },
+
+  async downloadAttendanceCSV(
+    startDate: string,
+    endDate: string,
+    department?: string,
+    status?: string
+  ): Promise<void> {
+    const params = new URLSearchParams({
+      start_date: startDate,
+      end_date: endDate,
+    });
+    if (department && department !== 'ALL') params.append('department', department);
+    if (status && status !== 'ALL') params.append('status', status);
+
+    const token = getStoredToken();
+    const url = `${BASE_URL.replace(/\/+$/, '')}/api/v1/analytics/export/attendance.csv?${params.toString()}`;
+
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => 'Download failed');
+      throw new ApiError(res.status, `Export failed: ${errText}`);
+    }
+
+    const blob = await res.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = `attendance_report_${startDate}_to_${endDate}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(downloadUrl);
   },
 
   // Employees
