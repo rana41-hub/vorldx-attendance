@@ -95,7 +95,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ health }) => {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6 w-full">
       {/* Page Header */}
       <div>
         <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-[#EAF2FF]">
