@@ -176,18 +176,22 @@ export const WFHScreen: React.FC = () => {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Top Banner & Apply Action */}
       <View style={styles.topInfo}>
-        <View>
+        <View style={styles.headerRow}>
           <Text style={[styles.title, { color: colors.textPrimary }]}>Work from Home</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Remote work applications and approval history</Text>
+          <TouchableOpacity
+            style={[styles.applyBtn, { backgroundColor: colors.primary }]}
+            onPress={openModal}
+            activeOpacity={0.8}
+            accessibilityLabel="Request Work from Home"
+            accessibilityRole="button"
+          >
+            <Ionicons name="add" size={18} color="#FFFFFF" />
+            <Text style={styles.applyBtnText}>Request</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={[styles.applyBtn, { backgroundColor: colors.primary }]}
-          onPress={openModal}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="add" size={18} color="#FFFFFF" />
-          <Text style={styles.applyBtnText}>Request</Text>
-        </TouchableOpacity>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          Remote work applications and approval history
+        </Text>
       </View>
 
       {/* Policy & Eligibility Card */}
@@ -512,12 +516,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   topInfo: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 12,
+  },
+  headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 10,
+    marginBottom: 4,
   },
   title: {
     fontSize: 20,
@@ -527,7 +534,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 12,
     color: '#64748B',
-    marginTop: 2,
+    lineHeight: 16,
   },
   applyBtn: {
     flexDirection: 'row',

@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -60,7 +59,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenProfile }) => {
       </TouchableOpacity>
 
       <View style={styles.rightActions}>
-        {/* Server Status Pill */}
+        {/* Server Status Pill positioned slightly to the left of the gear */}
         <TouchableOpacity
           style={[
             styles.statusPill,
@@ -82,27 +81,6 @@ export const Header: React.FC<HeaderProps> = ({ onOpenProfile }) => {
           <Text style={[styles.statusText, { color: colors.textSecondary }]}>
             {isBackendOnline ? 'Live' : 'Offline'}
           </Text>
-        </TouchableOpacity>
-
-        {/* Dedicated Settings & Theme Header Action */}
-        <TouchableOpacity
-          style={[
-            styles.settingsBtn,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-            },
-          ]}
-          onPress={onOpenProfile}
-          activeOpacity={0.7}
-          accessibilityLabel="Settings and Preferences"
-          accessibilityRole="button"
-        >
-          <Ionicons
-            name="settings-outline"
-            size={18}
-            color={isDark ? colors.accentCyan : colors.primary}
-          />
         </TouchableOpacity>
       </View>
     </View>
@@ -161,34 +139,26 @@ const styles = StyleSheet.create({
   rightActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    marginRight: 66,
   },
   statusPill: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    paddingVertical: 6,
+    paddingVertical: 4,
     paddingHorizontal: 9,
-    borderRadius: 18,
+    borderRadius: 14,
     gap: 6,
-    minHeight: 36,
+    minHeight: 32,
   },
   statusDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   statusText: {
     fontSize: 11,
     fontWeight: '600',
-  },
-  settingsBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });
 

@@ -75,12 +75,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 
       {/* Sidebar Navigation */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 dark:bg-[#071020] text-white flex flex-col border-r border-slate-800 dark:border-[#203653] transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 dark:bg-[#071020] text-white flex flex-col border-r border-slate-800 dark:border-[#203653] transition-transform duration-200 ease-in-out lg:sticky lg:top-0 lg:h-screen lg:self-start lg:translate-x-0 ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Brand Header */}
-        <div className="h-16 flex items-center justify-between px-6 border-b border-slate-800 dark:border-[#203653]">
+        <div className="h-16 flex items-center justify-between px-6 border-b border-slate-800 dark:border-[#203653] shrink-0">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-xl bg-indigo-600 dark:bg-[#3B82F6] flex items-center justify-center font-bold text-white shadow-xs dark:shadow-[0_0_15px_-2px_rgba(59,130,246,0.5)]">
               <Building2 className="w-5 h-5" />
@@ -132,7 +132,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         </nav>
 
         {/* User Card & Logout in Sidebar */}
-        <div className="p-3 border-t border-slate-800 dark:border-[#203653] bg-slate-950/60 dark:bg-[#050B18]/70">
+        <div className="p-3 border-t border-slate-800 dark:border-[#203653] bg-slate-950/60 dark:bg-[#050B18]/70 shrink-0">
           <div className="flex items-center justify-between p-2 rounded-lg bg-slate-900 dark:bg-[#0C1930] border border-slate-800/80 dark:border-[#203653]">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="h-8 w-8 rounded-full bg-indigo-600/30 dark:bg-[#3B82F6]/30 border border-indigo-500/30 dark:border-[#3B82F6]/40 text-indigo-300 dark:text-[#60A5FA] font-bold text-xs flex items-center justify-center shrink-0">

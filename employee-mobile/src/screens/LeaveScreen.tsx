@@ -167,18 +167,22 @@ export const LeaveScreen: React.FC = () => {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Top Banner & Apply Action */}
       <View style={styles.topInfo}>
-        <View>
+        <View style={styles.headerRow}>
           <Text style={[styles.title, { color: colors.textPrimary }]}>Time Off & Leaves</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Apply for leave and track review status</Text>
+          <TouchableOpacity
+            style={[styles.applyBtn, { backgroundColor: colors.primary }]}
+            onPress={openModal}
+            activeOpacity={0.8}
+            accessibilityLabel="Apply for Time Off"
+            accessibilityRole="button"
+          >
+            <Ionicons name="add" size={18} color="#FFFFFF" />
+            <Text style={styles.applyBtnText}>Apply</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={[styles.applyBtn, { backgroundColor: colors.primary }]}
-          onPress={openModal}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="add" size={18} color="#FFFFFF" />
-          <Text style={styles.applyBtnText}>Apply</Text>
-        </TouchableOpacity>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          Apply for leave and track review status
+        </Text>
       </View>
 
       {/* Dynamic Summary Cards */}
@@ -471,12 +475,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   topInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 12,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
   },
   title: {
     fontSize: 20,
@@ -486,7 +493,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 12,
     color: '#64748B',
-    marginTop: 2,
+    lineHeight: 16,
   },
   applyBtn: {
     flexDirection: 'row',
