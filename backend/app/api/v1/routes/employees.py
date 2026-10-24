@@ -4,7 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
-from app.dependencies.auth import require_admin_user
+from app.dependencies.auth import get_optional_current_user, require_admin_user
 from app.dependencies.database import get_db
 from app.models.attendance import AttendanceRecord
 from app.models.employee import Employee
@@ -43,8 +43,15 @@ def list_employees(
 @router.post("", response_model=EmployeeResponse, status_code=status.HTTP_201_CREATED)
 def create_employee(
     payload: EmployeeCreate,
+    current_user: Optional[User] = Depends(get_optional_current_user),
     db: Session = Depends(get_db),
 ):
+    if current_user and current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required to perform this action.",
+        )
+
     existing = db.scalar(
         select(Employee).where(Employee.employee_code == payload.employee_code)
     )
@@ -79,8 +86,14 @@ def get_employee(
 def update_employee(
     employee_id: int,
     payload: EmployeeUpdate,
+    current_user: Optional[User] = Depends(get_optional_current_user),
     db: Session = Depends(get_db),
 ):
+    if current_user and current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required to perform this action.",
+        )
     employee = db.get(Employee, employee_id)
     if not employee:
         raise HTTPException(
@@ -139,8 +152,15 @@ def update_employee(
 @router.delete("/{employee_id}", response_model=EmployeeDeleteResponse)
 def delete_employee(
     employee_id: int,
+    current_user: Optional[User] = Depends(get_optional_current_user),
     db: Session = Depends(get_db),
 ):
+    if current_user and current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required to perform this action.",
+        )
+
     employee = db.get(Employee, employee_id)
     if not employee:
         raise HTTPException(

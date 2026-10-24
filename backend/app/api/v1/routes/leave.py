@@ -103,6 +103,13 @@ def review_leave_request(
             detail="Leave request not found.",
         )
 
+    # Prevent employee self-approval even if the employee is also an administrator
+    if current_admin.employee and leave_request.employee_id == current_admin.employee.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrators cannot approve or reject their own leave requests.",
+        )
+
     if leave_request.status != LeaveStatus.PENDING:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

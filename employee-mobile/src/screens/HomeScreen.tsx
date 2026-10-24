@@ -450,162 +450,170 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
         )}
       </View>
 
-      {/* Overview Stats (4 Cards) */}
-      <View style={styles.statsGrid}>
-        <TouchableOpacity
-          style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          onPress={() => onNavigateTab('history')}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel={`Present Days: ${stats.presentDays}`}
-        >
-          <View
-            style={[
-              styles.statIcon,
-              { backgroundColor: isDark ? 'rgba(52, 211, 153, 0.15)' : '#ECFDF5' },
-            ]}
+      {/* Overview Stats (4 Cards in structured rows) */}
+      <View style={styles.statsContainer}>
+        <View style={styles.cardRow}>
+          <TouchableOpacity
+            style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={() => onNavigateTab('history')}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={`Present Days: ${stats.presentDays}`}
           >
-            <Ionicons name="checkmark-circle-outline" size={18} color={colors.success} />
-          </View>
-          <Text style={[styles.statVal, { color: colors.textPrimary }]}>{stats.presentDays}</Text>
-          <Text style={[styles.statTitle, { color: colors.textSecondary }]}>Present Days</Text>
-        </TouchableOpacity>
+            <View
+              style={[
+                styles.statIcon,
+                { backgroundColor: isDark ? 'rgba(52, 211, 153, 0.15)' : '#ECFDF5' },
+              ]}
+            >
+              <Ionicons name="checkmark-circle-outline" size={18} color={colors.success} />
+            </View>
+            <Text style={[styles.statVal, { color: colors.textPrimary }]}>{stats.presentDays}</Text>
+            <Text style={[styles.statTitle, { color: colors.textSecondary }]}>Present Days</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          onPress={() => onNavigateTab('history')}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel={`Late Arrivals: ${stats.lateDays}`}
-        >
-          <View
-            style={[
-              styles.statIcon,
-              { backgroundColor: isDark ? 'rgba(251, 191, 36, 0.15)' : '#FEF3C7' },
-            ]}
+          <TouchableOpacity
+            style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={() => onNavigateTab('history')}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={`Late Arrivals: ${stats.lateDays}`}
           >
-            <Ionicons name="time-outline" size={18} color={colors.warning} />
-          </View>
-          <Text style={[styles.statVal, { color: colors.textPrimary }]}>{stats.lateDays}</Text>
-          <Text style={[styles.statTitle, { color: colors.textSecondary }]}>Late Arrivals</Text>
-        </TouchableOpacity>
+            <View
+              style={[
+                styles.statIcon,
+                { backgroundColor: isDark ? 'rgba(251, 191, 36, 0.15)' : '#FEF3C7' },
+              ]}
+            >
+              <Ionicons name="time-outline" size={18} color={colors.warning} />
+            </View>
+            <Text style={[styles.statVal, { color: colors.textPrimary }]}>{stats.lateDays}</Text>
+            <Text style={[styles.statTitle, { color: colors.textSecondary }]}>Late Arrivals</Text>
+          </TouchableOpacity>
+        </View>
 
-        <TouchableOpacity
-          style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          onPress={() => onNavigateTab('history')}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel={`Historical Attendance Rate: ${stats.totalRecords > 0 ? stats.attendancePercentage : 100} percent`}
-        >
-          <View
-            style={[
-              styles.statIcon,
-              { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#EEF2FF' },
-            ]}
+        <View style={styles.cardRow}>
+          <TouchableOpacity
+            style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={() => onNavigateTab('history')}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={`Historical Attendance Rate: ${stats.totalRecords > 0 ? stats.attendancePercentage : 100} percent`}
           >
-            <Ionicons name="pie-chart-outline" size={18} color={isDark ? colors.accentCyan : colors.primary} />
-          </View>
-          <Text style={[styles.statVal, { color: colors.textPrimary }]}>
-            {stats.totalRecords > 0 ? `${stats.attendancePercentage}%` : '100%'}
-          </Text>
-          <Text style={[styles.statTitle, { color: colors.textSecondary }]}>Attendance Rate</Text>
-          <Text style={[styles.statSubText, { color: colors.textMuted }]}>Historical Record</Text>
-        </TouchableOpacity>
+            <View
+              style={[
+                styles.statIcon,
+                { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#EEF2FF' },
+              ]}
+            >
+              <Ionicons name="pie-chart-outline" size={18} color={isDark ? colors.accentCyan : colors.primary} />
+            </View>
+            <Text style={[styles.statVal, { color: colors.textPrimary }]}>
+              {stats.totalRecords > 0 ? `${stats.attendancePercentage}%` : '100%'}
+            </Text>
+            <Text style={[styles.statTitle, { color: colors.textSecondary }]}>Attendance Rate</Text>
+            <Text style={[styles.statSubText, { color: colors.textMuted }]}>Historical Record</Text>
+          </TouchableOpacity>
 
-        <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View
-            style={[
-              styles.statIcon,
-              {
-                backgroundColor: isBackendOnline
-                  ? isDark ? 'rgba(52, 211, 153, 0.15)' : '#ECFDF5'
-                  : isDark ? 'rgba(251, 113, 133, 0.15)' : '#FEF2F2',
-              },
-            ]}
-          >
-            <Ionicons
-              name={isBackendOnline ? 'cloud-done-outline' : 'cloud-offline-outline'}
-              size={18}
-              color={isBackendOnline ? colors.success : colors.danger}
-            />
+          <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View
+              style={[
+                styles.statIcon,
+                {
+                  backgroundColor: isBackendOnline
+                    ? isDark ? 'rgba(52, 211, 153, 0.15)' : '#ECFDF5'
+                    : isDark ? 'rgba(251, 113, 133, 0.15)' : '#FEF2F2',
+                },
+              ]}
+            >
+              <Ionicons
+                name={isBackendOnline ? 'cloud-done-outline' : 'cloud-offline-outline'}
+                size={18}
+                color={isBackendOnline ? colors.success : colors.danger}
+              />
+            </View>
+            <Text style={[styles.statVal, { color: colors.textPrimary }]}>
+              {isBackendOnline ? 'Online' : 'Offline'}
+            </Text>
+            <Text style={[styles.statTitle, { color: colors.textSecondary }]}>Server Sync</Text>
           </View>
-          <Text style={[styles.statVal, { color: colors.textPrimary }]}>
-            {isBackendOnline ? 'Online' : 'Offline'}
-          </Text>
-          <Text style={[styles.statTitle, { color: colors.textSecondary }]}>Server Sync</Text>
         </View>
       </View>
 
       {/* Quick Action Shortcuts */}
       <Text style={[styles.sectionHeader, { color: colors.textPrimary }]}>Quick Actions</Text>
-      <View style={styles.shortcutsGrid}>
-        <TouchableOpacity
-          style={[styles.actionItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          onPress={handleQuickScanPress}
-          activeOpacity={0.7}
-        >
-          <View
-            style={[
-              styles.actionIcon,
-              { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#EEF2FF' },
-            ]}
+      <View style={styles.shortcutsContainer}>
+        <View style={styles.cardRow}>
+          <TouchableOpacity
+            style={[styles.actionItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={handleQuickScanPress}
+            activeOpacity={0.7}
           >
-            <Ionicons name="scan" size={22} color={isDark ? colors.accentCyan : colors.primary} />
-          </View>
-          <Text style={[styles.actionLabel, { color: colors.textPrimary }]}>Scan QR</Text>
-          <Text style={[styles.actionDesc, { color: colors.textMuted }]}>Entrance gate</Text>
-        </TouchableOpacity>
+            <View
+              style={[
+                styles.actionIcon,
+                { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#EEF2FF' },
+              ]}
+            >
+              <Ionicons name="scan" size={22} color={isDark ? colors.accentCyan : colors.primary} />
+            </View>
+            <Text style={[styles.actionLabel, { color: colors.textPrimary }]}>Scan QR</Text>
+            <Text style={[styles.actionDesc, { color: colors.textMuted }]}>Entrance gate</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.actionItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          onPress={() => onNavigateTab('leave')}
-          activeOpacity={0.7}
-        >
-          <View
-            style={[
-              styles.actionIcon,
-              { backgroundColor: isDark ? 'rgba(251, 191, 36, 0.15)' : '#FEF3C7' },
-            ]}
+          <TouchableOpacity
+            style={[styles.actionItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={() => onNavigateTab('leave')}
+            activeOpacity={0.7}
           >
-            <Ionicons name="calendar-clear-outline" size={22} color={colors.warning} />
-          </View>
-          <Text style={[styles.actionLabel, { color: colors.textPrimary }]}>Apply Leave</Text>
-          <Text style={[styles.actionDesc, { color: colors.textMuted }]}>Vacation / Sick</Text>
-        </TouchableOpacity>
+            <View
+              style={[
+                styles.actionIcon,
+                { backgroundColor: isDark ? 'rgba(251, 191, 36, 0.15)' : '#FEF3C7' },
+              ]}
+            >
+              <Ionicons name="calendar-clear-outline" size={22} color={colors.warning} />
+            </View>
+            <Text style={[styles.actionLabel, { color: colors.textPrimary }]}>Apply Leave</Text>
+            <Text style={[styles.actionDesc, { color: colors.textMuted }]}>Vacation / Sick</Text>
+          </TouchableOpacity>
+        </View>
 
-        <TouchableOpacity
-          style={[styles.actionItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          onPress={() => onNavigateTab('wfh')}
-          activeOpacity={0.7}
-        >
-          <View
-            style={[
-              styles.actionIcon,
-              { backgroundColor: isDark ? 'rgba(34, 211, 238, 0.15)' : '#F0FDFA' },
-            ]}
+        <View style={styles.cardRow}>
+          <TouchableOpacity
+            style={[styles.actionItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={() => onNavigateTab('wfh')}
+            activeOpacity={0.7}
           >
-            <Ionicons name="desktop-outline" size={22} color={isDark ? colors.accentCyan : '#0D9488'} />
-          </View>
-          <Text style={[styles.actionLabel, { color: colors.textPrimary }]}>Request WFH</Text>
-          <Text style={[styles.actionDesc, { color: colors.textMuted }]}>Remote work days</Text>
-        </TouchableOpacity>
+            <View
+              style={[
+                styles.actionIcon,
+                { backgroundColor: isDark ? 'rgba(34, 211, 238, 0.15)' : '#F0FDFA' },
+              ]}
+            >
+              <Ionicons name="desktop-outline" size={22} color={isDark ? colors.accentCyan : '#0D9488'} />
+            </View>
+            <Text style={[styles.actionLabel, { color: colors.textPrimary }]}>Request WFH</Text>
+            <Text style={[styles.actionDesc, { color: colors.textMuted }]}>Remote work days</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.actionItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          onPress={() => onNavigateTab('history')}
-          activeOpacity={0.7}
-        >
-          <View
-            style={[
-              styles.actionIcon,
-              { backgroundColor: isDark ? 'rgba(52, 211, 153, 0.15)' : '#F0FDF4' },
-            ]}
+          <TouchableOpacity
+            style={[styles.actionItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={() => onNavigateTab('history')}
+            activeOpacity={0.7}
           >
-            <Ionicons name="list-outline" size={22} color={colors.success} />
-          </View>
-          <Text style={[styles.actionLabel, { color: colors.textPrimary }]}>Attendance</Text>
-          <Text style={[styles.actionDesc, { color: colors.textMuted }]}>Past records</Text>
-        </TouchableOpacity>
+            <View
+              style={[
+                styles.actionIcon,
+                { backgroundColor: isDark ? 'rgba(52, 211, 153, 0.15)' : '#F0FDF4' },
+              ]}
+            >
+              <Ionicons name="list-outline" size={22} color={colors.success} />
+            </View>
+            <Text style={[styles.actionLabel, { color: colors.textPrimary }]}>Attendance</Text>
+            <Text style={[styles.actionDesc, { color: colors.textMuted }]}>Past records</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Recent Attendance History */}
@@ -928,15 +936,16 @@ const styles = StyleSheet.create({
   btnDisabled: {
     opacity: 0.6,
   },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  statsContainer: {
     gap: 10,
     marginBottom: 20,
   },
+  cardRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
   statCard: {
     flex: 1,
-    minWidth: '46%',
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 12,
@@ -976,14 +985,11 @@ const styles = StyleSheet.create({
     color: '#0F172A',
     marginBottom: 12,
   },
-  shortcutsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
+  shortcutsContainer: {
+    gap: 10,
   },
   actionItem: {
     flex: 1,
-    minWidth: '46%',
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,

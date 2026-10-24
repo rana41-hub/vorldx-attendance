@@ -148,6 +148,7 @@ const styles = StyleSheet.create({
   rightActions: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginRight: 76,
   },
   statusPill: {
     flexDirection: 'row',

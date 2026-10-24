@@ -293,7 +293,7 @@ export const ProfileScreen: React.FC = () => {
             activeOpacity={0.8}
             accessibilityRole="radio"
             accessibilityState={{ selected: themeMode === 'dark' }}
-            accessibilityLabel="Cyberpunk Dark theme"
+            accessibilityLabel="Dark Mode theme"
           >
             <Ionicons
               name="moon-outline"
@@ -310,7 +310,7 @@ export const ProfileScreen: React.FC = () => {
                 },
               ]}
             >
-              Cyberpunk
+              Dark Mode
             </Text>
           </TouchableOpacity>
 
