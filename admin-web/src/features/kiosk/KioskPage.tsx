@@ -177,37 +177,37 @@ export const KioskPage: React.FC = () => {
       <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-cyan-600/10 dark:bg-[#22D3EE]/10 rounded-full blur-3xl pointer-events-none" />
 
       {/* Top Header Bar */}
-      <header className="px-6 py-4 flex items-center justify-between border-b border-slate-900 dark:border-[#203653] bg-slate-950/80 dark:bg-[#071020]/90 backdrop-blur-md z-10">
-        <div className="flex items-center gap-4">
+      <header className="px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2 sm:gap-4 border-b border-slate-900 dark:border-[#203653] bg-slate-950/80 dark:bg-[#071020]/90 backdrop-blur-md z-10">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           <button
             onClick={() => navigate('/')}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-[#0C1930] hover:bg-slate-800 dark:hover:bg-[#10213D] border border-slate-800 dark:border-[#203653] text-slate-300 dark:text-[#A9BCD8] hover:text-white transition-colors text-xs font-medium cursor-pointer"
+            className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-[#0C1930] hover:bg-slate-800 dark:hover:bg-[#10213D] border border-slate-800 dark:border-[#203653] text-slate-300 dark:text-[#A9BCD8] hover:text-white transition-colors text-xs font-medium cursor-pointer shrink-0"
             title="Return to Admin Dashboard"
           >
             <ArrowLeft className="w-4 h-4 text-cyan-400" />
-            <span>Admin Portal</span>
+            <span className="hidden min-[380px]:inline">Admin Portal</span>
           </button>
 
-          <div className="h-4 w-px bg-slate-800 dark:bg-[#203653] hidden sm:block" />
+          <div className="h-4 w-px bg-slate-800 dark:border-[#203653] hidden sm:block" />
 
-          <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-indigo-600 dark:bg-[#3B82F6] flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+            <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-indigo-600 dark:bg-[#3B82F6] flex items-center justify-center text-white shadow-md shadow-blue-500/20 shrink-0">
               <Building2 className="w-4 h-4" />
             </div>
-            <div>
-              <div className="text-sm font-semibold tracking-wide text-white dark:text-[#EAF2FF]">
+            <div className="min-w-0">
+              <div className="text-xs sm:text-sm font-semibold tracking-wide text-white dark:text-[#EAF2FF] truncate">
                 VorldX Attendance Kiosk
               </div>
-              <div className="text-[11px] text-slate-400 dark:text-[#7E93B5] flex items-center gap-1.5">
+              <div className="text-[10px] sm:text-[11px] text-slate-400 dark:text-[#7E93B5] flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>Office Check-in Terminal</span>
+                <span className="truncate">Office Check-in Terminal</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Live Digital Clock & Office Badge */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <div className="hidden md:flex flex-col items-end mr-2">
             <span className="font-mono text-base font-bold text-white dark:text-[#EAF2FF] tracking-wider">
               {timeFormatted}
@@ -215,14 +215,14 @@ export const KioskPage: React.FC = () => {
             <span className="text-[11px] text-slate-400 dark:text-[#7E93B5]">{dateFormatted}</span>
           </div>
 
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-[#0C1930] border border-slate-800 dark:border-[#203653] text-xs font-medium text-slate-300 dark:text-[#A9BCD8]">
+          <div className="hidden min-[480px]:flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-[#0C1930] border border-slate-800 dark:border-[#203653] text-xs font-medium text-slate-300 dark:text-[#A9BCD8]">
             <span className="text-slate-500 dark:text-[#7E93B5]">Location:</span>
             <span className="font-mono text-cyan-400 font-semibold">{officeCode}</span>
           </div>
 
           <button
             onClick={toggleFullscreen}
-            className="p-2 rounded-lg bg-slate-900 dark:bg-[#0C1930] hover:bg-slate-800 dark:hover:bg-[#10213D] border border-slate-800 dark:border-[#203653] text-slate-300 dark:text-[#A9BCD8] hover:text-white transition-colors cursor-pointer"
+            className="p-1.5 sm:p-2 rounded-lg bg-slate-900 dark:bg-[#0C1930] hover:bg-slate-800 dark:hover:bg-[#10213D] border border-slate-800 dark:border-[#203653] text-slate-300 dark:text-[#A9BCD8] hover:text-white transition-colors cursor-pointer"
             title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
             aria-label={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
           >
@@ -236,25 +236,25 @@ export const KioskPage: React.FC = () => {
       </header>
 
       {/* Main Center Area */}
-      <main className="flex-1 flex flex-col items-center justify-center p-6 z-10 max-w-4xl mx-auto w-full">
+      <main className="flex-1 flex flex-col items-center justify-center p-3 sm:p-6 z-10 max-w-4xl mx-auto w-full">
         {/* Terminal Title & Subtitle */}
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-950/60 dark:bg-[#0C1930] border border-indigo-800/50 dark:border-[#164E63] text-indigo-300 dark:text-[#22D3EE] text-xs font-medium mb-3">
+        <div className="text-center mb-4 sm:mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-950/60 dark:bg-[#0C1930] border border-indigo-800/50 dark:border-[#164E63] text-indigo-300 dark:text-[#22D3EE] text-[11px] sm:text-xs font-medium mb-2 sm:mb-3">
             <ShieldCheck className="w-3.5 h-3.5 text-indigo-400 dark:text-[#22D3EE]" />
             <span>High-Security Dynamic QR Protocol</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white dark:text-[#EAF2FF] mb-2">
+          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white dark:text-[#EAF2FF] mb-2">
             Scan to Record Attendance
           </h1>
-          <p className="text-sm text-slate-400 dark:text-[#7E93B5] max-w-md mx-auto">
+          <p className="text-xs sm:text-sm text-slate-400 dark:text-[#7E93B5] max-w-md mx-auto px-2">
             Point your VorldX Employee Mobile App camera at the QR code below. Code automatically rotates every 18 seconds to prevent replay.
           </p>
         </div>
 
         {/* Central Display Card with Cyberpunk Elevated Surface and Restrained Cyan Border */}
-        <div className="relative p-6 sm:p-8 rounded-3xl bg-slate-900/90 dark:bg-[#0C1930]/95 border border-slate-800 dark:border-[#164E63] shadow-2xl dark:shadow-[0_0_40px_rgba(34,211,238,0.08)] backdrop-blur-xl flex flex-col items-center w-full max-w-md transition-all">
+        <div className="relative p-4 sm:p-8 rounded-2xl sm:rounded-3xl bg-slate-900/90 dark:bg-[#0C1930]/95 border border-slate-800 dark:border-[#164E63] shadow-2xl dark:shadow-[0_0_40px_rgba(34,211,238,0.08)] backdrop-blur-xl flex flex-col items-center w-full max-w-md transition-all">
           {/* QR Display Container - High-contrast white canvas for instant scanning */}
-          <div className="relative w-80 h-80 rounded-2xl bg-white p-4 shadow-inner flex items-center justify-center overflow-hidden border-4 border-slate-800/80 dark:border-[#203653]">
+          <div className="relative w-64 h-64 min-[400px]:w-72 min-[400px]:h-72 sm:w-80 sm:h-80 max-w-[calc(100vw-3rem)] max-h-[calc(100vw-3rem)] rounded-2xl bg-white p-3 sm:p-4 shadow-inner flex items-center justify-center overflow-hidden border-4 border-slate-800/80 dark:border-[#203653] aspect-square">
             {/* Active Canvas */}
             <canvas
               ref={canvasRef}

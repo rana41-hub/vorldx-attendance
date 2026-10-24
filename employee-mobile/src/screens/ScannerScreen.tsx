@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { ApiService } from '../services/api';
@@ -79,6 +80,7 @@ const parseScannedQR = (
 };
 
 export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onSuccess, onCancel }) => {
+  const insets = useSafeAreaInsets();
   const { currentEmployee, todayRecord, refreshTodayStatus, showToast } = useApp();
   const { colors, isDark } = useTheme();
   const [permission, requestPermission] = useCameraPermissions();
@@ -305,7 +307,7 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onSuccess, onCance
       />
 
       {/* Top Header Overlay */}
-      <View style={styles.topOverlay}>
+      <View style={[styles.topOverlay, { top: Math.max(insets.top, 16) + 8 }]}>
         <TouchableOpacity style={styles.roundBtn} onPress={onCancel} activeOpacity={0.7}>
           <Ionicons name="close" size={22} color="#FFFFFF" />
         </TouchableOpacity>
@@ -334,7 +336,7 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onSuccess, onCance
 
       {/* Already Checked-In Status Banner */}
       {todayRecord && (
-        <View style={styles.todayNoticeBanner}>
+        <View style={[styles.todayNoticeBanner, { top: Math.max(insets.top, 16) + 64 }]}>
           <Ionicons name="information-circle" size={18} color="#60A5FA" />
           <Text style={styles.todayNoticeText}>
             {todayRecord.check_out
@@ -383,6 +385,7 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onSuccess, onCance
         style={[
           styles.bottomBar,
           {
+            bottom: Math.max(insets.bottom, 16) + 10,
             backgroundColor: isDark ? 'rgba(7, 16, 32, 0.94)' : 'rgba(15, 23, 42, 0.88)',
             borderColor: isDark ? '#164E63' : 'transparent',
             borderWidth: isDark ? 1 : 0,
@@ -607,8 +610,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   reticleBox: {
-    width: 250,
-    height: 250,
+    width: '72%',
+    maxWidth: 250,
+    aspectRatio: 1,
     borderRadius: 24,
     position: 'relative',
     alignItems: 'center',

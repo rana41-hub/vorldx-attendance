@@ -43,14 +43,22 @@ export const Header: React.FC<HeaderProps> = ({ onOpenProfile }) => {
         >
           <Text style={styles.avatarText}>{getInitials()}</Text>
         </View>
-        <View>
+        <View style={{ flex: 1, marginRight: 8 }}>
           <View style={styles.greetingRow}>
             <Text style={[styles.greeting, { color: colors.textMuted }]}>Hello, </Text>
-            <Text style={[styles.name, { color: colors.textPrimary }]}>
+            <Text
+              style={[styles.name, { color: colors.textPrimary }]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
               {currentEmployee ? currentEmployee.first_name : 'Team Member'}
             </Text>
           </View>
-          <Text style={[styles.department, { color: colors.textSecondary }]}>
+          <Text
+            style={[styles.department, { color: colors.textSecondary }]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
             {currentEmployee
               ? `${currentEmployee.department} • ${currentEmployee.employee_code}`
               : 'Connecting...'}
@@ -59,7 +67,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenProfile }) => {
       </TouchableOpacity>
 
       <View style={styles.rightActions}>
-        {/* Server Status Pill positioned slightly to the left of the gear */}
+        {/* Server Status Pill */}
         <TouchableOpacity
           style={[
             styles.statusPill,
@@ -130,6 +138,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 15,
     fontWeight: '700',
+    flexShrink: 1,
   },
   department: {
     fontSize: 11,
@@ -139,7 +148,6 @@ const styles = StyleSheet.create({
   rightActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 66,
   },
   statusPill: {
     flexDirection: 'row',

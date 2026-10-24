@@ -107,7 +107,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ health }) => {
       </div>
 
       {/* SECTION 1: ATTENDANCE POLICIES (Primary Functional Section for HR Admins) */}
-      <div className="rounded-xl border border-slate-200 dark:border-[#203653] bg-white dark:bg-[#0C1930] p-6 shadow-xs space-y-5">
+      <div className="rounded-xl border border-slate-200 dark:border-[#203653] bg-white dark:bg-[#0C1930] p-4 sm:p-6 shadow-xs space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-[#203653]">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-indigo-50 dark:bg-[#10213D] text-indigo-600 dark:text-[#22D3EE] border border-indigo-100 dark:border-[#203653]">
@@ -126,7 +126,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ health }) => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => navigate('/policy?tab=simulator')}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-[#164E63]/30 text-indigo-700 dark:text-[#22D3EE] text-xs font-semibold hover:bg-indigo-100 dark:hover:bg-[#164E63]/50 border border-indigo-200 dark:border-[#164E63] transition-colors cursor-pointer"
@@ -277,7 +277,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ health }) => {
       </div>
 
       {/* SECTION 2: SYSTEM OPERATIONAL HEALTH (Compact Readable Operational Section) */}
-      <div className="rounded-xl border border-slate-200 dark:border-[#203653] bg-white dark:bg-[#0C1930] p-6 shadow-xs space-y-4">
+      <div className="rounded-xl border border-slate-200 dark:border-[#203653] bg-white dark:bg-[#0C1930] p-4 sm:p-6 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-[#203653]">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-lg bg-emerald-50 dark:bg-[#10213D] text-emerald-600 dark:text-[#34D399] border border-emerald-100 dark:border-[#203653]">
@@ -351,7 +351,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ health }) => {
           {/* SECTION 3: ADVANCED SYSTEM DIAGNOSTICS (Moved out of primary view) */}
           {showAdvancedDiagnostics && (
             <div className="mt-3 p-4 rounded-xl bg-slate-900/5 dark:bg-[#081426] border border-slate-200 dark:border-[#203653] space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                   <h4 className="text-xs font-bold text-slate-900 dark:text-[#EAF2FF]">
                     Technical Infrastructure Details
@@ -432,7 +432,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ health }) => {
       </div>
 
       {/* SECTION 4: INTERFACE THEME CUSTOMIZATION CARD */}
-      <div className="rounded-xl border border-slate-200 dark:border-[#203653] bg-white dark:bg-[#0C1930] p-6 shadow-xs">
+      <div className="rounded-xl border border-slate-200 dark:border-[#203653] bg-white dark:bg-[#0C1930] p-4 sm:p-6 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-[#203653]">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-lg bg-indigo-50 dark:bg-[#10213D] text-indigo-600 dark:text-[#22D3EE] border border-indigo-100 dark:border-[#203653]">

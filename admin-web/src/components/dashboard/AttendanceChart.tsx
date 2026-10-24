@@ -103,30 +103,32 @@ export const AttendanceChart: React.FC<AttendanceChartProps> = ({ trends, isLoad
         </div>
 
         {/* Scale Mode Switcher & Legend */}
-        <div className="flex flex-wrap items-center gap-4">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4">
           {/* Scale mode toggle */}
           <div className="flex items-center bg-slate-100 dark:bg-[#081426] p-0.5 rounded-xl border border-slate-200 dark:border-[#203653]">
             <button
               onClick={() => setScaleMode('activity')}
-              className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
+              className={`px-2 sm:px-2.5 py-1 text-[11px] sm:text-xs font-semibold rounded-lg transition-all ${
                 scaleMode === 'activity'
                   ? 'bg-white dark:bg-[#10213D] text-indigo-600 dark:text-[#22D3EE] shadow-xs'
                   : 'text-slate-600 dark:text-[#7E93B5] hover:text-slate-900 dark:hover:text-[#EAF2FF]'
               }`}
               title="Scale optimized to daily active participants so small values remain clearly visible"
             >
-              Activity Scale (Max {activityCeiling})
+              <span className="sm:hidden">Activity</span>
+              <span className="hidden sm:inline">Activity Scale (Max {activityCeiling})</span>
             </button>
             <button
               onClick={() => setScaleMode('roster')}
-              className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
+              className={`px-2 sm:px-2.5 py-1 text-[11px] sm:text-xs font-semibold rounded-lg transition-all ${
                 scaleMode === 'roster'
                   ? 'bg-white dark:bg-[#10213D] text-indigo-600 dark:text-[#22D3EE] shadow-xs'
                   : 'text-slate-600 dark:text-[#7E93B5] hover:text-slate-900 dark:hover:text-[#EAF2FF]'
               }`}
-              title="Scale against total registered workforce (2,565) with guaranteed minimum bar visibility"
+              title="Scale against total registered workforce with guaranteed minimum bar visibility"
             >
-              Roster Scale ({totalActiveHeadcount})
+              <span className="sm:hidden">Roster ({totalActiveHeadcount})</span>
+              <span className="hidden sm:inline">Roster Scale ({totalActiveHeadcount})</span>
             </button>
           </div>
 
@@ -201,7 +203,7 @@ export const AttendanceChart: React.FC<AttendanceChartProps> = ({ trends, isLoad
       {/* Main Chart Area with Y-axis & Reference Grid */}
       <div className="relative flex pt-2 pb-2">
         {/* Y-Axis scale labels */}
-        <div className="w-12 sm:w-14 shrink-0 flex flex-col justify-between text-right pr-2 text-[10px] font-mono font-medium text-slate-400 dark:text-[#7E93B5] select-none h-44 pb-7">
+        <div className="w-10 sm:w-14 shrink-0 flex flex-col justify-between text-right pr-1.5 sm:pr-2 text-[9px] sm:text-[10px] font-mono font-medium text-slate-400 dark:text-[#7E93B5] select-none h-44 pb-7">
           {yTicks.map((tick, idx) => (
             <span key={idx} className="leading-none">
               {scaleMode === 'roster' && tick > 999 ? `${(tick / 1000).toFixed(1)}k` : tick}
@@ -210,7 +212,7 @@ export const AttendanceChart: React.FC<AttendanceChartProps> = ({ trends, isLoad
         </div>
 
         {/* Chart Canvas & Bars Container */}
-        <div className="relative flex-1 h-44 pb-7">
+        <div className="relative flex-1 h-44 pb-7 overflow-hidden">
           {/* Background horizontal grid lines */}
           <div className="absolute inset-x-0 top-0 bottom-7 flex flex-col justify-between pointer-events-none">
             <div className="w-full border-b border-dashed border-slate-200 dark:border-[#203653]/50" />
@@ -221,7 +223,7 @@ export const AttendanceChart: React.FC<AttendanceChartProps> = ({ trends, isLoad
           </div>
 
           {/* Columns */}
-          <div className="relative h-full flex items-end justify-between gap-2 sm:gap-4 px-1 sm:px-2 z-10">
+          <div className="relative h-full flex items-end justify-between gap-1 sm:gap-4 px-0.5 sm:px-2 z-10">
             {trends.map((item, index) => {
               // Exact proportions relative to active ceiling
               const ceiling = activeCeiling;
@@ -247,14 +249,14 @@ export const AttendanceChart: React.FC<AttendanceChartProps> = ({ trends, isLoad
               return (
                 <div
                   key={item.date}
-                  className="flex-1 flex flex-col items-center justify-end h-full group cursor-pointer"
+                  className="flex-1 flex flex-col items-center justify-end h-full group cursor-pointer min-w-0"
                   onMouseEnter={() => setHoveredIndex(index)}
                   onMouseLeave={() => setHoveredIndex(null)}
                   onClick={() => setHoveredIndex(index)}
                 >
                   {/* Top value badge */}
                   <div
-                    className={`text-[10px] font-bold font-mono transition-all duration-150 mb-1 ${
+                    className={`text-[9px] sm:text-[10px] font-bold font-mono transition-all duration-150 mb-1 ${
                       isHovered
                         ? 'text-indigo-600 dark:text-[#22D3EE] scale-110 font-extrabold'
                         : 'text-slate-500 dark:text-[#7E93B5] group-hover:text-slate-800 dark:group-hover:text-[#EAF2FF]'
@@ -265,7 +267,7 @@ export const AttendanceChart: React.FC<AttendanceChartProps> = ({ trends, isLoad
 
                   {/* Segmented Stacked Bar Container */}
                   <div
-                    className={`w-full max-w-[38px] sm:max-w-[46px] bg-slate-100 dark:bg-[#081426] border rounded-t-lg relative flex flex-col justify-end overflow-hidden transition-all duration-200 ${
+                    className={`w-full max-w-[26px] xs:max-w-[34px] sm:max-w-[46px] bg-slate-100 dark:bg-[#081426] border rounded-t-lg relative flex flex-col justify-end overflow-hidden transition-all duration-200 ${
                       isHovered
                         ? 'border-indigo-400 dark:border-[#22D3EE] shadow-[0_0_12px_rgba(34,211,238,0.25)]'
                         : 'border-slate-200 dark:border-[#203653]/70 group-hover:border-slate-300 dark:group-hover:border-[#38BDF8]/40'

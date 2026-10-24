@@ -334,7 +334,7 @@ export const AttendancePage: React.FC = () => {
           </div>
 
           {/* Date Range Start & End */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-2">
             <div>
               <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-[#7E93B5] mb-1">
                 From Date
@@ -406,8 +406,8 @@ export const AttendancePage: React.FC = () => {
 
       {/* Attendance Table */}
       <div className="rounded-2xl border border-slate-200 dark:border-[#203653] bg-white dark:bg-[#0C1930] shadow-xs dark:shadow-[0_4px_20px_-2px_rgba(5,11,24,0.7)] overflow-hidden transition-all duration-200">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-600 dark:text-[#A9BCD8]">
+        <div className="overflow-x-auto overscroll-x-contain">
+          <table className="w-full text-left text-sm text-slate-600 dark:text-[#A9BCD8] min-w-[700px]">
             <thead className="bg-slate-50/75 dark:bg-[#081426] text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-[#7E93B5] border-b border-slate-100 dark:border-[#203653]">
               <tr>
                 <th className="px-5 py-3.5">Employee</th>
@@ -513,7 +513,7 @@ export const AttendancePage: React.FC = () => {
       {/* Authorized Correction Modal */}
       {correctingRecord && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 dark:bg-[#050B18]/80 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="bg-white dark:bg-[#0C1930] rounded-2xl border border-slate-200 dark:border-[#203653] shadow-2xl max-w-lg w-full p-6 transition-all duration-200">
+          <div className="bg-white dark:bg-[#0C1930] rounded-2xl border border-slate-200 dark:border-[#203653] shadow-2xl max-w-lg w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto transition-all duration-200">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#203653]/70 mb-4">
               <div className="flex items-center gap-2">
                 <Shield className="w-5 h-5 text-indigo-600 dark:text-[#22D3EE]" />
@@ -655,8 +655,8 @@ export const AttendancePage: React.FC = () => {
       {/* Audit Logs Modal */}
       {auditModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 dark:bg-[#050B18]/80 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="bg-white dark:bg-[#0C1930] rounded-2xl border border-slate-200 dark:border-[#203653] shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden transition-all duration-200">
-            <div className="px-6 py-4 border-b border-slate-100 dark:border-[#203653]/70 flex items-center justify-between bg-slate-50/50 dark:bg-[#081426]">
+          <div className="bg-white dark:bg-[#0C1930] rounded-2xl border border-slate-200 dark:border-[#203653] shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden transition-all duration-200">
+            <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 dark:border-[#203653]/70 flex items-center justify-between bg-slate-50/50 dark:bg-[#081426]">
               <div className="flex items-center gap-2">
                 <Shield className="w-4 h-4 text-indigo-600 dark:text-[#22D3EE]" />
                 <h3 className="text-sm font-bold text-slate-900 dark:text-[#EAF2FF]">
@@ -673,7 +673,7 @@ export const AttendancePage: React.FC = () => {
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto space-y-4 flex-1">
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1">
               {auditLoading ? (
                 <div className="py-12 text-center text-slate-500 dark:text-[#7E93B5]">
                   <RefreshCw className="w-6 h-6 animate-spin mx-auto text-indigo-600 dark:text-[#3B82F6] mb-2" />
@@ -739,7 +739,7 @@ export const AttendancePage: React.FC = () => {
               )}
             </div>
 
-            <div className="px-6 py-3 border-t border-slate-100 dark:border-[#203653]/70 bg-slate-50/50 dark:bg-[#081426] flex justify-end">
+            <div className="px-4 sm:px-6 py-3 border-t border-slate-100 dark:border-[#203653]/70 bg-slate-50/50 dark:bg-[#081426] flex justify-end">
               <button
                 onClick={() => setAuditModalOpen(false)}
                 className="px-4 py-2 border border-slate-200 dark:border-[#203653] rounded-xl text-xs font-semibold text-slate-700 dark:text-[#A9BCD8] hover:bg-slate-100 dark:hover:bg-[#10213D] transition-colors"

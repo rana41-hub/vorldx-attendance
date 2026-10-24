@@ -248,11 +248,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: '#F8FAFC',
     borderRadius: 12,
-    padding: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
     marginBottom: 10,
+    gap: 4,
   },
   timeCol: {
-    minWidth: 70,
+    flex: 1,
+    minWidth: 55,
   },
   timeLabel: {
     fontSize: 10,
@@ -261,13 +264,13 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   timeValue: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
     color: '#0F172A',
     marginTop: 2,
   },
   divider: {
-    paddingHorizontal: 4,
+    paddingHorizontal: 2,
   },
   durationBadge: {
     backgroundColor: '#EEF2FF',

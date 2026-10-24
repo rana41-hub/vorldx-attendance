@@ -205,8 +205,8 @@ export const LeavePage: React.FC = () => {
 
       {/* Table */}
       <div className="rounded-xl border border-slate-200 dark:border-[#203653] bg-white dark:bg-[#0C1930] shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-600 dark:text-[#A9BCD8]">
+        <div className="overflow-x-auto overscroll-x-contain">
+          <table className="w-full text-left text-sm text-slate-600 dark:text-[#A9BCD8] min-w-[650px]">
             <thead className="bg-slate-50/75 dark:bg-[#081426]/80 text-xs uppercase tracking-wider text-slate-500 dark:text-[#7E93B5] border-b border-slate-100 dark:border-[#203653]">
               <tr>
                 <th className="px-5 py-3.5 font-medium">Request</th>
@@ -288,7 +288,7 @@ export const LeavePage: React.FC = () => {
       {/* Review Modal */}
       {reviewingItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 dark:bg-black/75 backdrop-blur-xs p-4">
-          <div className="bg-white dark:bg-[#0C1930] rounded-2xl shadow-xl border border-slate-200 dark:border-[#203653] max-w-md w-full p-6">
+          <div className="bg-white dark:bg-[#0C1930] rounded-2xl shadow-xl border border-slate-200 dark:border-[#203653] max-w-md w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
             <h3 className="text-base font-bold text-slate-900 dark:text-[#EAF2FF] mb-1">
               {reviewingItem.action === 'APPROVE' ? 'Approve Leave Request' : 'Reject Leave Request'}
             </h3>
@@ -346,7 +346,7 @@ export const LeavePage: React.FC = () => {
       {/* Submit Leave Request Modal */}
       {isSubmitModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 dark:bg-black/75 backdrop-blur-xs p-4">
-          <div className="bg-white dark:bg-[#0C1930] rounded-2xl shadow-xl border border-slate-200 dark:border-[#203653] max-w-md w-full p-6">
+          <div className="bg-white dark:bg-[#0C1930] rounded-2xl shadow-xl border border-slate-200 dark:border-[#203653] max-w-md w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
             <h3 className="text-base font-bold text-slate-900 dark:text-[#EAF2FF] mb-1">
               Submit Leave Request
             </h3>
@@ -374,7 +374,7 @@ export const LeavePage: React.FC = () => {
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-[#A9BCD8] mb-1">
                     Start Date *

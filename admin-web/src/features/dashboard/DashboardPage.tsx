@@ -114,9 +114,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
   return (
     <div className="space-y-6">
       {/* Top Banner & Date Filter */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-[#EAF2FF]">
+          <h2 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-[#EAF2FF]">
             Administrator Dashboard
           </h2>
           <p className="text-xs text-slate-500 dark:text-[#7E93B5] mt-0.5">
@@ -124,7 +124,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap sm:flex-nowrap">
           {/* Auto-sync indicator & toggle */}
           {targetDate === new Date().toISOString().split('T')[0] && (
             <button
@@ -151,20 +151,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
             </span>
           )}
 
-          <label htmlFor="dashboard-date" className="text-xs font-semibold text-slate-600 dark:text-[#A9BCD8]">
-            Date:
-          </label>
-          <input
-            id="dashboard-date"
-            type="date"
-            value={targetDate}
-            onChange={(e) => setTargetDate(e.target.value)}
-            className="bg-white dark:bg-[#081426] border border-slate-200 dark:border-[#203653] rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-[#EAF2FF] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-[#22D3EE]/20 focus:border-indigo-500 dark:focus:border-[#22D3EE] transition-colors"
-          />
+          <div className="flex items-center gap-1.5">
+            <label htmlFor="dashboard-date" className="text-xs font-semibold text-slate-600 dark:text-[#A9BCD8]">
+              Date:
+            </label>
+            <input
+              id="dashboard-date"
+              type="date"
+              value={targetDate}
+              onChange={(e) => setTargetDate(e.target.value)}
+              className="bg-white dark:bg-[#081426] border border-slate-200 dark:border-[#203653] rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-[#EAF2FF] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-[#22D3EE]/20 focus:border-indigo-500 dark:focus:border-[#22D3EE] transition-colors"
+            />
+          </div>
           <button
             onClick={() => fetchDashboardData()}
             disabled={isLoading || isSyncing}
-            className="p-1.5 border border-slate-200 dark:border-[#203653] rounded-xl text-slate-600 dark:text-[#A9BCD8] hover:bg-slate-50 dark:hover:bg-[#10213D] transition-colors disabled:opacity-50"
+            className="p-1.5 border border-slate-200 dark:border-[#203653] rounded-xl text-slate-600 dark:text-[#A9BCD8] hover:bg-slate-50 dark:hover:bg-[#10213D] transition-colors disabled:opacity-50 cursor-pointer"
             title="Refresh dashboard"
             aria-label="Refresh dashboard metrics"
           >
@@ -258,11 +260,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2.5 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap sm:flex-nowrap shrink-0">
             {metrics.pending_leave_requests > 0 && (
               <Link
                 to="/leave"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 dark:bg-[#FBBF24] dark:hover:bg-amber-400 text-white dark:text-slate-950 font-bold transition-all shadow-xs focus-visible:ring-2 focus-visible:ring-amber-400 focus:outline-none"
+                className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 dark:bg-[#FBBF24] dark:hover:bg-amber-400 text-white dark:text-slate-950 font-bold transition-all shadow-xs focus-visible:ring-2 focus-visible:ring-amber-400 focus:outline-none text-xs"
               >
                 <span>Review Leaves ({metrics.pending_leave_requests})</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -271,7 +273,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
             {metrics.pending_wfh_requests > 0 && (
               <Link
                 to="/wfh"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 dark:bg-[#3B82F6] dark:hover:bg-blue-500 text-white font-bold transition-all shadow-xs focus-visible:ring-2 focus-visible:ring-[#3B82F6] focus:outline-none"
+                className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 dark:bg-[#3B82F6] dark:hover:bg-blue-500 text-white font-bold transition-all shadow-xs focus-visible:ring-2 focus-visible:ring-[#3B82F6] focus:outline-none text-xs"
               >
                 <span>Review WFH ({metrics.pending_wfh_requests})</span>
                 <ArrowRight className="w-3.5 h-3.5" />

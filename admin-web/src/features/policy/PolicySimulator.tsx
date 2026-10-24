@@ -84,7 +84,7 @@ export const PolicySimulator: React.FC<PolicySimulatorProps> = ({ policy }) => {
       </div>
 
       {/* Simulator Input Card */}
-      <div className="rounded-xl border border-slate-200 dark:border-[#203653] bg-white dark:bg-[#0C1930] p-6 shadow-xs space-y-5">
+      <div className="rounded-xl border border-slate-200 dark:border-[#203653] bg-white dark:bg-[#0C1930] p-4 sm:p-6 shadow-xs space-y-5">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#203653]">
           <div className="flex items-center gap-2.5">
             <PlayCircle className="w-5 h-5 text-indigo-600 dark:text-[#22D3EE]" />
@@ -155,20 +155,20 @@ export const PolicySimulator: React.FC<PolicySimulatorProps> = ({ policy }) => {
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-[#203653]">
-            <button
-              type="button"
-              onClick={() => {
-                setSimCheckIn(getDefaultDateTime(9, 10)); // On-time
-                setSimCheckOut(getDefaultDateTime(18, 30));
-                setValidationError(null);
-              }}
-              className="text-xs text-indigo-600 dark:text-[#22D3EE] hover:underline cursor-pointer"
-            >
-              Preset: On-Time Full Day
-            </button>
-
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-[#203653]">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSimCheckIn(getDefaultDateTime(9, 10)); // On-time
+                  setSimCheckOut(getDefaultDateTime(18, 30));
+                  setValidationError(null);
+                }}
+                className="text-xs text-indigo-600 dark:text-[#22D3EE] hover:underline cursor-pointer"
+              >
+                Preset: On-Time Full Day
+              </button>
+              <span className="text-slate-300 dark:text-[#203653]">•</span>
               <button
                 type="button"
                 onClick={() => {
@@ -176,27 +176,27 @@ export const PolicySimulator: React.FC<PolicySimulatorProps> = ({ policy }) => {
                   setSimCheckOut(getDefaultDateTime(13, 30)); // Half-day
                   setValidationError(null);
                 }}
-                className="text-xs text-slate-500 dark:text-[#7E93B5] hover:text-slate-800 dark:hover:text-[#EAF2FF] hover:underline cursor-pointer mr-2"
+                className="text-xs text-slate-500 dark:text-[#7E93B5] hover:text-slate-800 dark:hover:text-[#EAF2FF] hover:underline cursor-pointer"
               >
                 Preset: Late & Half-Day
               </button>
-
-              <button
-                type="submit"
-                disabled={isSimulating}
-                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 dark:bg-[#3B82F6] dark:hover:bg-blue-600 text-white rounded-lg text-xs font-semibold shadow-xs disabled:opacity-50 cursor-pointer transition-colors"
-              >
-                <Sparkles className="w-4 h-4 text-cyan-300" />
-                <span>{isSimulating ? 'Evaluating Policy...' : 'Evaluate Policy Rule'}</span>
-              </button>
             </div>
+
+            <button
+              type="submit"
+              disabled={isSimulating}
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 dark:bg-[#3B82F6] dark:hover:bg-blue-600 text-white rounded-lg text-xs font-semibold shadow-xs disabled:opacity-50 cursor-pointer transition-colors w-full sm:w-auto"
+            >
+              <Sparkles className="w-4 h-4 text-cyan-300" />
+              <span>{isSimulating ? 'Evaluating Policy...' : 'Evaluate Policy Rule'}</span>
+            </button>
           </div>
         </form>
       </div>
 
       {/* Simulator Results Section */}
       {simResult && (
-        <div className="rounded-xl border border-slate-200 dark:border-[#203653] bg-white dark:bg-[#0C1930] p-6 shadow-xs space-y-4">
+        <div className="rounded-xl border border-slate-200 dark:border-[#203653] bg-white dark:bg-[#0C1930] p-4 sm:p-6 shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#203653]">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-[#34D399]" />

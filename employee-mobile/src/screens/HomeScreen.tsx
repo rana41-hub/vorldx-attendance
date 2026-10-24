@@ -935,7 +935,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   statCard: {
-    width: '48%',
+    flex: 1,
+    minWidth: '46%',
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 12,
@@ -981,7 +982,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   actionItem: {
-    width: '48%',
+    flex: 1,
+    minWidth: '46%',
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,

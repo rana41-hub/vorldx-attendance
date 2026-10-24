@@ -122,7 +122,7 @@ export const PolicyPage: React.FC = () => {
       </div>
 
       {/* Segmented Experience Switcher Tabs */}
-      <div className="flex items-center gap-2 p-1 rounded-xl bg-slate-100 dark:bg-[#0C1930] border border-slate-200 dark:border-[#203653] w-fit">
+      <div className="flex flex-wrap sm:flex-nowrap items-center gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-[#0C1930] border border-slate-200 dark:border-[#203653] w-full sm:w-fit">
         <button
           type="button"
           onClick={() => setTab('parameters')}
@@ -207,7 +207,7 @@ export const PolicyPage: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-[#A9BCD8] mb-1">
                     Work Start Time

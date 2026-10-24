@@ -231,7 +231,7 @@ export const ReportsPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={fetchReports}
             disabled={isLoading}
@@ -358,7 +358,7 @@ export const ReportsPage: React.FC = () => {
           {/* Presets & Apply */}
           <div className="space-y-1">
             <label className="font-semibold text-slate-600 dark:text-[#A9BCD8]">Quick Intervals</label>
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-1.5">
               <button
                 type="button"
                 onClick={() => handleApplyPreset(0)}
@@ -643,8 +643,8 @@ export const ReportsPage: React.FC = () => {
             </span>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+          <div className="overflow-x-auto overscroll-x-contain">
+            <table className="w-full text-left text-xs min-w-[700px]">
               <thead className="bg-slate-50/75 dark:bg-[#081426]/80 border-b border-slate-200 dark:border-[#203653] text-slate-500 dark:text-[#7E93B5] font-semibold uppercase tracking-wider text-[10px]">
                 <tr>
                   <th className="px-4 py-2.5">Date</th>
@@ -791,8 +791,8 @@ export const ReportsPage: React.FC = () => {
           </div>
 
           {/* WFH Requests Table */}
-          <div className="overflow-x-auto border border-slate-200 dark:border-[#203653] rounded-lg">
-            <table className="w-full text-left text-xs">
+          <div className="overflow-x-auto overscroll-x-contain border border-slate-200 dark:border-[#203653] rounded-lg">
+            <table className="w-full text-left text-xs min-w-[700px]">
               <thead className="bg-slate-50 dark:bg-[#081426]/80 border-b border-slate-200 dark:border-[#203653] text-slate-500 dark:text-[#7E93B5] font-semibold uppercase tracking-wider text-[10px]">
                 <tr>
                   <th className="px-4 py-2.5">Employee</th>

@@ -483,12 +483,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 8,
     marginBottom: 4,
   },
   title: {
     fontSize: 20,
     fontWeight: '800',
     color: '#0F172A',
+    flexShrink: 1,
   },
   subtitle: {
     fontSize: 12,

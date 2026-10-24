@@ -75,7 +75,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 
       {/* Sidebar Navigation */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 dark:bg-[#071020] text-white flex flex-col border-r border-slate-800 dark:border-[#203653] transition-transform duration-200 ease-in-out lg:sticky lg:top-0 lg:h-screen lg:self-start lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 w-64 h-[100dvh] bg-slate-900 dark:bg-[#071020] text-white flex flex-col border-r border-slate-800 dark:border-[#203653] transition-transform duration-200 ease-in-out lg:sticky lg:top-0 lg:h-screen lg:self-start lg:translate-x-0 overscroll-contain ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -97,7 +97,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           </div>
           <button
             onClick={() => setMobileMenuOpen(false)}
-            className="lg:hidden text-slate-400 hover:text-white"
+            className="lg:hidden text-slate-400 hover:text-white p-1"
             aria-label="Close menu"
           >
             <X className="w-5 h-5" />
@@ -169,17 +169,17 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header Bar */}
-        <header className="sticky top-0 z-30 h-16 bg-white dark:bg-[#071020] border-b border-slate-200 dark:border-[#203653] px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4 transition-colors duration-200">
-          <div className="flex items-center gap-3">
+        <header className="sticky top-0 z-30 h-16 bg-white dark:bg-[#071020] border-b border-slate-200 dark:border-[#203653] px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-2 sm:gap-4 transition-colors duration-200">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden p-2 text-slate-600 dark:text-[#A9BCD8] hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#10213D]"
+              className="lg:hidden p-1.5 text-slate-600 dark:text-[#A9BCD8] hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#10213D] shrink-0"
               aria-label="Open sidebar"
             >
               <Menu className="w-5 h-5" />
             </button>
-            <div>
-              <h1 className="text-base sm:text-lg font-bold text-slate-900 dark:text-[#EAF2FF]">
+            <div className="min-w-0">
+              <h1 className="text-sm sm:text-lg font-bold text-slate-900 dark:text-[#EAF2FF] truncate max-w-[120px] min-[400px]:max-w-[180px] sm:max-w-none">
                 {currentNav.name}
               </h1>
               <div className="hidden sm:flex items-center text-[11px] text-slate-400 dark:text-[#7E93B5] gap-1.5">
@@ -191,8 +191,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           </div>
 
           {/* Controls: Search, ThemeToggle, Health, Notifications, User */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="relative hidden md:block w-48 lg:w-56">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+            <div className="relative hidden md:block w-44 lg:w-56">
               <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-[#7E93B5] pointer-events-none" />
               <input
                 type="text"
@@ -213,7 +213,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             />
 
             <button
-              className="relative p-2 text-slate-500 dark:text-[#A9BCD8] hover:text-slate-700 dark:hover:text-[#EAF2FF] hover:bg-slate-100 dark:hover:bg-[#10213D] rounded-lg transition-colors"
+              className="relative p-1.5 sm:p-2 text-slate-500 dark:text-[#A9BCD8] hover:text-slate-700 dark:hover:text-[#EAF2FF] hover:bg-slate-100 dark:hover:bg-[#10213D] rounded-lg transition-colors"
               title="Notifications"
               aria-label="View notifications"
             >
@@ -222,8 +222,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             </button>
 
             {/* Header User Profile & Logout */}
-            <div className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-[#203653]">
-              <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-[#10213D] border border-indigo-200 dark:border-[#164E63] text-indigo-700 dark:text-[#22D3EE] font-bold text-xs flex items-center justify-center">
+            <div className="flex items-center gap-1.5 sm:gap-2 pl-1.5 sm:pl-2 border-l border-slate-200 dark:border-[#203653]">
+              <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-indigo-100 dark:bg-[#10213D] border border-indigo-200 dark:border-[#164E63] text-indigo-700 dark:text-[#22D3EE] font-bold text-xs flex items-center justify-center shrink-0">
                 {user?.admin_id ? user.admin_id.substring(0, 3) : 'AD'}
               </div>
               <div className="hidden xl:block text-left">
@@ -234,7 +234,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
               </div>
               <button
                 onClick={handleLogout}
-                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 dark:hover:text-rose-400 rounded-lg transition-colors ml-1"
+                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 dark:hover:text-rose-400 rounded-lg transition-colors ml-0.5 sm:ml-1"
                 title="Sign out"
                 aria-label="Sign out"
               >
@@ -245,7 +245,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         </header>
 
         {/* Content Outlet */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-3 sm:p-6 lg:p-8 max-w-7xl 2xl:max-w-[1600px] w-full mx-auto">
           <Outlet />
         </main>
       </div>

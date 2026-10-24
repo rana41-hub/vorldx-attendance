@@ -100,7 +100,7 @@ export const LoginPage: React.FC = () => {
         </div>
 
         {/* Login Card */}
-        <div className="bg-white dark:bg-[#0C1930] border border-slate-200 dark:border-[#203653] rounded-2xl shadow-xl dark:shadow-[0_8px_32px_rgba(5,11,24,0.7)] backdrop-blur-md p-6 sm:p-8 transition-colors duration-200">
+        <div className="bg-white dark:bg-[#0C1930] border border-slate-200 dark:border-[#203653] rounded-2xl shadow-xl dark:shadow-[0_8px_32px_rgba(5,11,24,0.7)] backdrop-blur-md p-5 sm:p-8 transition-colors duration-200">
           <div className="flex items-center gap-2 mb-6 pb-4 border-b border-slate-100 dark:border-[#203653]/70">
             <Shield className="w-4 h-4 text-indigo-600 dark:text-[#22D3EE]" />
             <h2 className="text-sm font-bold text-slate-800 dark:text-[#EAF2FF]">

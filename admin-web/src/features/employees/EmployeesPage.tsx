@@ -312,16 +312,16 @@ export const EmployeesPage: React.FC = () => {
 
       {/* Employees Table */}
       <div className="rounded-2xl border border-slate-200 dark:border-[#203653] bg-white dark:bg-[#0C1930] shadow-xs dark:shadow-[0_4px_20px_-2px_rgba(5,11,24,0.7)] overflow-hidden transition-all duration-200">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-600 dark:text-[#A9BCD8]">
+        <div className="overflow-x-auto overscroll-x-contain">
+          <table className="w-full text-left text-sm text-slate-600 dark:text-[#A9BCD8] min-w-[640px]">
             <thead className="bg-slate-50/75 dark:bg-[#081426] text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-[#7E93B5] border-b border-slate-100 dark:border-[#203653]">
               <tr>
-                <th scope="col" className="px-5 py-3.5">Employee</th>
-                <th scope="col" className="px-5 py-3.5">Code</th>
-                <th scope="col" className="px-5 py-3.5">Department</th>
-                <th scope="col" className="px-5 py-3.5">Designation</th>
-                <th scope="col" className="px-5 py-3.5">Account Status</th>
-                <th scope="col" className="px-5 py-3.5 text-right">Actions</th>
+                <th scope="col" className="px-4 sm:px-5 py-3 sm:py-3.5">Employee</th>
+                <th scope="col" className="px-4 sm:px-5 py-3 sm:py-3.5">Code</th>
+                <th scope="col" className="px-4 sm:px-5 py-3 sm:py-3.5">Department</th>
+                <th scope="col" className="px-4 sm:px-5 py-3 sm:py-3.5">Designation</th>
+                <th scope="col" className="px-4 sm:px-5 py-3 sm:py-3.5">Account Status</th>
+                <th scope="col" className="px-4 sm:px-5 py-3 sm:py-3.5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-[#203653]/60">
@@ -430,7 +430,7 @@ export const EmployeesPage: React.FC = () => {
       {/* Add / Edit Employee Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 dark:bg-[#050B18]/80 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="bg-white dark:bg-[#0C1930] rounded-2xl shadow-2xl border border-slate-200 dark:border-[#203653] max-w-lg w-full p-6 transition-all duration-200">
+          <div className="bg-white dark:bg-[#0C1930] rounded-2xl shadow-2xl border border-slate-200 dark:border-[#203653] max-w-lg w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto transition-all duration-200">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#203653]/70 mb-4">
               <h3 className="text-base font-bold text-slate-900 dark:text-[#EAF2FF]">
                 {editingEmployee ? 'Edit Employee Details' : 'Add New Organization Employee'}
@@ -556,7 +556,7 @@ export const EmployeesPage: React.FC = () => {
       {/* Account Provisioning Modal */}
       {accountModalEmp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 dark:bg-[#050B18]/80 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="bg-white dark:bg-[#0C1930] rounded-2xl shadow-2xl border border-slate-200 dark:border-[#203653] max-w-md w-full p-6 transition-all duration-200">
+          <div className="bg-white dark:bg-[#0C1930] rounded-2xl shadow-2xl border border-slate-200 dark:border-[#203653] max-w-md w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto transition-all duration-200">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#203653]/70 mb-4">
               <h3 className="text-base font-bold text-slate-900 dark:text-[#EAF2FF]">
                 Provision Credentials
@@ -626,7 +626,7 @@ export const EmployeesPage: React.FC = () => {
       {/* Delete Confirmation Modal */}
       {deletingEmp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 dark:bg-[#050B18]/80 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="bg-white dark:bg-[#0C1930] rounded-2xl shadow-2xl border border-slate-200 dark:border-[#203653] max-w-md w-full p-6 transition-all duration-200">
+          <div className="bg-white dark:bg-[#0C1930] rounded-2xl shadow-2xl border border-slate-200 dark:border-[#203653] max-w-md w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto transition-all duration-200">
             <div className="flex items-center gap-3 text-rose-600 dark:text-[#FB7185] mb-3">
               <ShieldAlert className="w-6 h-6 shrink-0" />
               <h3 className="text-base font-bold text-slate-900 dark:text-[#EAF2FF]">Confirm Deletion</h3>
