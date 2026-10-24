@@ -431,19 +431,3 @@ npx tsc --noEmit      # Validates TypeScript typings across all screens and serv
 ### 4. Admin Web API Connection Error
 * **Symptom**: `AxiosError: Network Error` in browser console.
 * **Resolution**: Verify that the backend is running (`curl http://localhost:8000/health`) and that `VITE_API_BASE_URL` in `admin-web/.env` is set to `http://localhost:8000/api/v1`.
-
----
-
-## 14. Current Limitations
-
-1. **Physical Camera Hardware Verification**: Dynamic QR code generation, rotation, and server-side cryptographic token validation are fully verified via automated tests and browser kiosk rendering. Camera scanning on physical devices requires a physical phone with Expo Go connected to the local Wi-Fi.
-2. **Stateless JWT Revocation**: Tokens remain cryptographically valid until the 60-minute expiry window lapses. Client-side logout clears the token from storage, but immediate token revocation requires a future server-side token denylist (e.g., Redis).
-3. **Local Scope**: In accordance with project instructions, the system is strictly configured and validated for local execution. Cloud hosting, public domains, and remote reverse proxies have not been deployed.
-
----
-
-## 15. Project Status
-
-* **Milestone**: Day 14 — Documentation & Deployment Readiness (October 25, 2026).
-* **Deployment Status**: **Local Development & Demonstration Only**. All cloud and public deployments are explicitly deferred per mentor guidance.
-* **Next Scheduled Milestone**: Day 15 — Final Controlled Demonstration (October 26, 2026).
