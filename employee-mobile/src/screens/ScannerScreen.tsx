@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'ex
 import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { ApiService } from '../services/api';
+import { formatTime } from '../utils/formatters';
 
 interface ScannerScreenProps {
   onSuccess: () => void;
@@ -77,7 +78,7 @@ const parseScannedQR = (
 };
 
 export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onSuccess, onCancel }) => {
-  const { currentEmployee, refreshTodayStatus, showToast } = useApp();
+  const { currentEmployee, todayRecord, refreshTodayStatus, showToast } = useApp();
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState<'back' | 'front'>('back');
   const [enableTorch, setEnableTorch] = useState(false);
@@ -85,8 +86,12 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onSuccess, onCance
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [manualCode, setManualCode] = useState('');
 
+  // Synchronous mutual exclusion refs to prevent camera multi-frame race conditions
+  const isProcessingRef = useRef(false);
+  const hasSucceededRef = useRef(false);
+
   const handleBarCodeScanned = async (result: BarcodeScanningResult) => {
-    if (isProcessing) return;
+    if (isProcessingRef.current || hasSucceededRef.current) return;
     const scannedData = result.data?.trim();
     if (!scannedData) return;
 
@@ -94,21 +99,43 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onSuccess, onCance
   };
 
   const processCheckIn = async (scannedRaw: string) => {
-    if (isProcessing) return;
+    if (isProcessingRef.current || hasSucceededRef.current) return;
+    isProcessingRef.current = true;
+    setIsProcessing(true);
 
     if (!currentEmployee) {
       showToast('Authentication session missing. Please log in again.', 'error');
+      isProcessingRef.current = false;
+      setIsProcessing(false);
       return;
     }
 
-    setIsProcessing(true);
+    // Pre-check: If employee has already marked attendance for today
+    if (todayRecord) {
+      if (todayRecord.check_out) {
+        showToast(
+          `Attendance already finalized for ${currentEmployee.first_name} (${currentEmployee.employee_code}) today.`,
+          'info'
+        );
+      } else {
+        showToast(
+          `Already checked in at ${formatTime(todayRecord.check_in)} for ${currentEmployee.first_name} (${currentEmployee.employee_code}). Tap "Record Check-Out" on Home when leaving.`,
+          'info'
+        );
+      }
+      setTimeout(() => {
+        isProcessingRef.current = false;
+        setIsProcessing(false);
+      }, 2000);
+      return;
+    }
 
     // 1. Client-side structural validation of the scanned payload
     const parsed = parseScannedQR(scannedRaw);
     if (!parsed.valid || !parsed.token) {
       showToast(parsed.error || 'Invalid QR code format.', 'error');
-      // Briefly debounce before re-enabling scan so user is not permanently stuck
       setTimeout(() => {
+        isProcessingRef.current = false;
         setIsProcessing(false);
       }, 1500);
       return;
@@ -117,16 +144,21 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onSuccess, onCance
     // 2. Submit to backend with authenticated employee credentials
     try {
       await ApiService.checkIn(currentEmployee.id, 'OFFICE_QR', parsed.token);
+      hasSucceededRef.current = true;
       showToast('Check-in verified successfully via Office QR!', 'success');
       await refreshTodayStatus();
       onSuccess();
     } catch (err: unknown) {
+      if (hasSucceededRef.current) {
+        return;
+      }
+
       const rawMsg = err instanceof Error ? err.message : 'Check-in failed';
       let userFriendlyMsg = rawMsg;
 
       const lower = rawMsg.toLowerCase();
       if (lower.includes('already exists') || lower.includes('409') || lower.includes('conflict')) {
-        userFriendlyMsg = 'Attendance record already exists for today.';
+        userFriendlyMsg = `Attendance record already exists today for ${currentEmployee?.first_name || 'this employee'} (${currentEmployee?.employee_code || ''}).`;
       } else if (lower.includes('expired')) {
         userFriendlyMsg = 'QR code has expired. Please scan the current code on the office display.';
       } else if (lower.includes('rotated') || lower.includes('revoked')) {
@@ -148,6 +180,7 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onSuccess, onCance
 
       // Re-enable scanning after 1.5s so employee can scan the updated code
       setTimeout(() => {
+        isProcessingRef.current = false;
         setIsProcessing(false);
       }, 1500);
     }
@@ -270,6 +303,18 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onSuccess, onCance
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Already Checked-In Status Banner */}
+      {todayRecord && (
+        <View style={styles.todayNoticeBanner}>
+          <Ionicons name="information-circle" size={18} color="#60A5FA" />
+          <Text style={styles.todayNoticeText}>
+            {todayRecord.check_out
+              ? `Attendance completed for ${currentEmployee?.first_name || 'today'} (${currentEmployee?.employee_code || ''}).`
+              : `Already checked in at ${formatTime(todayRecord.check_in)} (${currentEmployee?.employee_code || ''}). Shift in progress.`}
+          </Text>
+        </View>
+      )}
 
       {/* Center Viewfinder Reticle */}
       <View style={styles.reticleContainer}>
@@ -453,6 +498,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     zIndex: 10,
+  },
+  todayNoticeBanner: {
+    position: 'absolute',
+    top: 106,
+    left: 20,
+    right: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    backgroundColor: 'rgba(15, 23, 42, 0.92)',
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#3B82F6',
+    zIndex: 10,
+  },
+  todayNoticeText: {
+    flex: 1,
+    color: '#E0F2FE',
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 16,
   },
   roundBtn: {
     width: 44,

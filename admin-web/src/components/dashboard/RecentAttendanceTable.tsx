@@ -1,17 +1,15 @@
 import { StatusBadge } from '../ui/StatusBadge';
 import type { AttendanceRecord } from '../../types';
-import { Users, Info, Clock, CheckCircle } from 'lucide-react';
+import { Users, Clock } from 'lucide-react';
 
 interface RecentAttendanceTableProps {
   records: AttendanceRecord[];
-  isDemoData: boolean;
   onRefresh?: () => void;
   isLoading?: boolean;
 }
 
 export const RecentAttendanceTable: React.FC<RecentAttendanceTableProps> = ({
   records,
-  isDemoData,
   onRefresh,
   isLoading = false,
 }) => {
@@ -24,15 +22,6 @@ export const RecentAttendanceTable: React.FC<RecentAttendanceTableProps> = ({
             <h3 className="text-base font-semibold text-slate-900">
               Recent Attendance Activity
             </h3>
-            {isDemoData ? (
-              <span className="rounded bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-medium text-amber-800 flex items-center gap-1">
-                <Info className="w-3 h-3" /> SAMPLE DATA
-              </span>
-            ) : (
-              <span className="rounded bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-medium text-emerald-800 flex items-center gap-1">
-                <CheckCircle className="w-3 h-3" /> LIVE DATABASE
-              </span>
-            )}
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
             Real-time office check-in and check-out logs

@@ -1,13 +1,10 @@
 import { useEffect, useState, useMemo } from 'react';
 import {
-  CalendarCheck,
   RefreshCw,
   AlertCircle,
   CheckCircle2,
   Clock,
   Filter,
-  UserCheck,
-  LogOut,
   Edit3,
   History,
   Shield,
@@ -32,11 +29,6 @@ export const AttendancePage: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [filterEmployeeId, setFilterEmployeeId] = useState<string>('');
   const [filterError, setFilterError] = useState<string | null>(null);
-
-  // Simulation Console
-  const [simEmployeeId, setSimEmployeeId] = useState<number | ''>('');
-  const [simSource, setSimSource] = useState<string>('OFFICE_QR');
-  const [simLoading, setSimLoading] = useState(false);
 
   // Correction Modal State
   const [correctingRecord, setCorrectingRecord] = useState<AttendanceRecord | null>(null);
@@ -109,41 +101,6 @@ export const AttendancePage: React.FC = () => {
     setFilterError(null);
   };
 
-  const handleSimulateCheckIn = async () => {
-    if (!simEmployeeId) return;
-    setSimLoading(true);
-    setError(null);
-    setSuccess(null);
-    try {
-      const rec = await api.recordCheckIn(Number(simEmployeeId), simSource);
-      setSuccess(
-        `Check-in recorded for Employee #${rec.employee_id} (Status: ${rec.status}).`
-      );
-      loadData();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Check-in failed.');
-    } finally {
-      setSimLoading(false);
-    }
-  };
-
-  const handleSimulateCheckOut = async () => {
-    if (!simEmployeeId) return;
-    setSimLoading(true);
-    setError(null);
-    setSuccess(null);
-    try {
-      const rec = await api.recordCheckOut(Number(simEmployeeId));
-      setSuccess(
-        `Check-out recorded for Employee #${rec.employee_id} (Status: ${rec.status}).`
-      );
-      loadData();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Check-out failed.');
-    } finally {
-      setSimLoading(false);
-    }
-  };
 
   const formatTime = (isoString?: string | null) => {
     if (!isoString) return '—';
@@ -277,7 +234,7 @@ export const AttendancePage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold tracking-tight text-slate-900">
-            Attendance Records & Console
+            Attendance Records & Monitoring
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
             Audit office check-ins, punctuality timestamps, shift durations, and administrative corrections
@@ -324,61 +281,7 @@ export const AttendancePage: React.FC = () => {
         </div>
       )}
 
-      {/* Admin Test / Verification Console */}
-      <div className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-4 shadow-xs">
-        <div className="flex items-center gap-2 mb-2">
-          <CalendarCheck className="w-4 h-4 text-indigo-600" />
-          <h3 className="text-xs font-bold text-slate-900">
-            Administrative Check-In / Check-Out Console
-          </h3>
-        </div>
-        <p className="text-[11px] text-slate-500 mb-3">
-          Simulate or record an employee presence event using the backend verification endpoints.
-        </p>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <select
-            value={simEmployeeId}
-            onChange={(e) => setSimEmployeeId(e.target.value ? Number(e.target.value) : '')}
-            className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 min-w-[200px]"
-          >
-            <option value="">Select Employee...</option>
-            {employees.map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.full_name} ({e.employee_code})
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={simSource}
-            onChange={(e) => setSimSource(e.target.value)}
-            className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800"
-          >
-            <option value="OFFICE_QR">Source: OFFICE_QR</option>
-            <option value="MANUAL">Source: MANUAL</option>
-            <option value="REMOTE">Source: REMOTE</option>
-          </select>
-
-          <button
-            onClick={handleSimulateCheckIn}
-            disabled={!simEmployeeId || simLoading}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 disabled:opacity-50"
-          >
-            <UserCheck className="w-3.5 h-3.5" />
-            <span>Record Check-In</span>
-          </button>
-
-          <button
-            onClick={handleSimulateCheckOut}
-            disabled={!simEmployeeId || simLoading}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 text-white text-xs font-semibold hover:bg-slate-900 disabled:opacity-50"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Record Check-Out</span>
-          </button>
-        </div>
-      </div>
 
       {/* Multi-Dimensional Filter Toolbar */}
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs space-y-3">

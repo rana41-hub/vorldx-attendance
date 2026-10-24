@@ -268,7 +268,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
       {/* Recent Activity Table */}
       <RecentAttendanceTable
         records={recentRecords}
-        isDemoData={false}
         onRefresh={() => fetchDashboardData()}
         isLoading={isLoading}
       />

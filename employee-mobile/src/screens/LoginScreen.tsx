@@ -60,19 +60,6 @@ export const LoginScreen: React.FC = () => {
     }
   };
 
-  const handleFillDemo = () => {
-    setEmployeeId('VX-0101');
-    setPassword('Employee@VorldX2026');
-    setErrorMessage(null);
-    showToast('Loaded Alex Vance (VX-0101) - Shift completed today', 'info');
-  };
-
-  const handleFillAlanDemo = () => {
-    setEmployeeId('VX-B3FE66');
-    setPassword('SecurePassword123');
-    setErrorMessage(null);
-    showToast('Loaded Alan Kay (VX-B3FE66) - Ready for Check-In', 'info');
-  };
 
   const handleSaveServerUrl = async () => {
     if (!customUrl.trim()) return;
@@ -218,33 +205,7 @@ export const LoginScreen: React.FC = () => {
             )}
           </TouchableOpacity>
 
-          {/* Quick Demo Credentials */}
-          <View style={styles.demoBox}>
-            <View style={styles.demoHeader}>
-              <Ionicons name="information-circle-outline" size={16} color="#4F46E5" />
-              <Text style={styles.demoTitle}>Developer Test Accounts</Text>
-            </View>
-            <View style={styles.demoRow}>
-              <TouchableOpacity
-                style={styles.demoBtn}
-                onPress={handleFillDemo}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.demoBtnText}>Alex (Shift Done)</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.demoBtn, styles.demoBtnGreen]}
-                onPress={handleFillAlanDemo}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.demoBtnText}>Alan (Test Check-In)</Text>
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.demoText}>
-              • <Text style={styles.demoBold}>Alex Vance (VX-0101)</Text>: Already checked in & out today.{'\n'}
-              • <Text style={styles.demoBold}>Alan Kay (VX-B3FE66)</Text>: Not checked in today (tests Check-In).
-            </Text>
-          </View>
+
         </View>
 
         <Text style={styles.footerNote}>
@@ -516,53 +477,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 15,
   },
-  demoBox: {
-    marginTop: 20,
-    padding: 14,
-    backgroundColor: '#EEF2FF',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#C7D2FE',
-  },
-  demoHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 4,
-  },
-  demoTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#4F46E5',
-  },
-  demoText: {
-    fontSize: 11,
-    color: '#475569',
-    marginTop: 2,
-  },
-  demoBold: {
-    fontWeight: '700',
-    color: '#1E293B',
-  },
-  demoRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginVertical: 6,
-  },
-  demoBtn: {
-    backgroundColor: '#4F46E5',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-  },
-  demoBtnGreen: {
-    backgroundColor: '#059669',
-  },
-  demoBtnText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '700',
-  },
+
   footerNote: {
     fontSize: 11,
     color: '#94A3B8',

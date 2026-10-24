@@ -343,16 +343,16 @@ export const PolicyPage: React.FC = () => {
         </div>
       </form>
 
-      {/* Simulation Sandbox */}
+      {/* Policy Evaluation Preview */}
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs space-y-4">
         <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
           <PlayCircle className="w-5 h-5 text-indigo-600" />
           <div>
             <h3 className="text-sm font-bold text-slate-900">
-              Policy Calculation Simulation Sandbox
+              Policy Rule Evaluation & Status Preview
             </h3>
             <p className="text-xs text-slate-500">
-              Preview status and punctuality calculation without creating database records
+              Preview status and punctuality calculation against current policy rules without creating database records
             </p>
           </div>
         </div>
@@ -360,7 +360,7 @@ export const PolicyPage: React.FC = () => {
         <form onSubmit={handleRunSimulation} className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Simulated Check-In
+              Sample Check-In Time
             </label>
             <input
               type="datetime-local"
@@ -373,7 +373,7 @@ export const PolicyPage: React.FC = () => {
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Simulated Check-Out (Optional)
+              Sample Check-Out Time (Optional)
             </label>
             <input
               type="datetime-local"
@@ -389,7 +389,7 @@ export const PolicyPage: React.FC = () => {
             className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold disabled:opacity-50 h-[34px]"
           >
             <PlayCircle className="w-4 h-4" />
-            <span>{isSimulating ? 'Evaluating...' : 'Run Simulation'}</span>
+            <span>{isSimulating ? 'Evaluating...' : 'Evaluate Policy Rule'}</span>
           </button>
         </form>
 
