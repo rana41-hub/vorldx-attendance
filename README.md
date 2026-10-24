@@ -58,7 +58,7 @@ The **VorldX Attendance Management System** is a unified workforce management pl
 * **Excel Reporting**: OpenPyXL (v3.1.2+)
 
 ### Administrator Web Portal (`admin-web/`)
-* **Runtime**: Node.js 18+ & npm
+* **Runtime**: Node.js (Active environment: `v24.18.0`, minimum required: `18.0.0+`) & npm (`v11.16.0`)
 * **Framework**: React 19 (v19.2.8) & React DOM (v19.2.8)
 * **Build Tool**: Vite (v8.3.0)
 * **Language**: TypeScript (v6.0.2)
@@ -67,7 +67,7 @@ The **VorldX Attendance Management System** is a unified workforce management pl
 * **Icons**: Lucide React (v1.55.0)
 
 ### Employee Mobile Application (`employee-mobile/`)
-* **Runtime**: Node.js 18+ & Expo CLI
+* **Runtime**: Node.js (Active environment: `v24.18.0`, minimum required: `18.0.0+`) & Expo CLI
 * **Framework**: React Native (v0.86.3) & Expo SDK (v~57.0.28)
 * **Language**: TypeScript (v6.0.3)
 * **Hardware Integrations**: Expo Camera (v~57.0.6), Expo BarCodeScanner
@@ -193,10 +193,10 @@ Before running the application locally, ensure your machine satisfies the follow
 
 | Tool | Minimum Version | Verification Command | Purpose |
 |---|---|---|---|
-| **Python** | 3.10+ | `python --version` | FastAPI backend service execution |
-| **Node.js** | 18.0.0+ | `node -v` | Admin Web and Employee Mobile bundlers |
-| **npm** | 9.0.0+ | `npm -v` | Node package dependency management |
-| **PostgreSQL** | 14.0+ | `psql --version` | Relational database tier |
+| **Python** | 3.10+ (Verified on `3.10.11`) | `python --version` | FastAPI backend service execution |
+| **Node.js** | 18.0.0+ (Verified on `v24.18.0`) | `node -v` | Admin Web and Employee Mobile bundlers |
+| **npm** | 9.0.0+ (Verified on `v11.16.0`) | `npm -v` | Node package dependency management |
+| **PostgreSQL** | 14.0+ (Verified on `18.6`) | `psql --version` | Relational database tier |
 | **Git** | 2.30+ | `git --version` | Version control management |
 | **Expo Go** (Optional) | Latest | Mobile App Store / Play Store | Testing mobile app on physical phone |
 

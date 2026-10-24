@@ -10,10 +10,10 @@ Ensure the following tools are installed on your workstation before starting:
 
 | Tool | Minimum Version | Verification Command | Notes |
 |---|---|---|---|
-| **Python** | 3.10+ | `python --version` | Required for FastAPI backend and Alembic |
-| **Node.js** | 18.0.0+ | `node -v` | LTS release recommended |
-| **npm** | 9.0.0+ | `npm -v` | Included with Node.js installation |
-| **PostgreSQL** | 14.0+ | `psql --version` | Relational database server running on port 5432 |
+| **Python** | 3.10+ (Verified on `3.10.11`) | `python --version` | Required for FastAPI backend and Alembic |
+| **Node.js** | 18.0.0+ (Verified on `v24.18.0`) | `node -v` | LTS release recommended (v18+ minimum) |
+| **npm** | 9.0.0+ (Verified on `v11.16.0`) | `npm -v` | Included with Node.js installation |
+| **PostgreSQL** | 14.0+ (Verified on `18.6`) | `psql --version` | Relational database server running on port 5432 |
 | **Git** | 2.30+ | `git --version` | Version control management |
 | **Expo Go** (Optional) | Latest | Mobile App Store | Required only for physical phone testing |
 
