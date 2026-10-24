@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
+import { useTheme } from '../context/ThemeContext';
 import { StatusBadge } from '../components/StatusBadge';
 import { ApiService } from '../services/api';
 import { formatTime, formatDuration } from '../utils/formatters';
@@ -28,6 +29,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
     showToast,
     isBackendOnline,
   } = useApp();
+  const { colors, isDark } = useTheme();
 
   const [currentTime, setCurrentTime] = useState<string>('');
   const [currentDateStr, setCurrentDateStr] = useState<string>('');
@@ -185,31 +187,49 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       {/* Date & Time Widget */}
       <View style={styles.timeCard}>
         <View>
-          <Text style={styles.dateLabel}>{currentDateStr}</Text>
-          <Text style={styles.timeDisplay}>{currentTime}</Text>
+          <Text style={[styles.dateLabel, { color: colors.textSecondary }]}>{currentDateStr}</Text>
+          <Text style={[styles.timeDisplay, { color: colors.textPrimary }]}>{currentTime}</Text>
         </View>
         <TouchableOpacity
-          style={styles.refreshBtn}
+          style={[
+            styles.refreshBtn,
+            {
+              backgroundColor: isDark ? colors.surfaceElevated : colors.primaryLight,
+              borderColor: colors.border,
+              borderWidth: 1,
+            },
+          ]}
           onPress={() => {
             refreshTodayStatus();
             loadStats();
           }}
           activeOpacity={0.7}
+          accessibilityLabel="Refresh attendance status"
         >
-          <Ionicons name="refresh" size={18} color="#4F46E5" />
+          <Ionicons name="refresh" size={18} color={isDark ? colors.accentCyan : colors.primary} />
         </TouchableOpacity>
       </View>
 
       {/* Main Today Attendance Card */}
-      <View style={styles.heroCard}>
+      <View
+        style={[
+          styles.heroCard,
+          {
+            backgroundColor: colors.surface,
+            borderColor: isDark ? colors.borderSubtle : colors.border,
+            shadowColor: isDark ? colors.accentCyan : '#000000',
+            shadowOpacity: isDark ? 0.08 : 0.04,
+          },
+        ]}
+      >
         <View style={styles.heroHeader}>
           <View style={styles.heroTag}>
-            <Ionicons name="shield-checkmark" size={16} color="#4F46E5" />
-            <Text style={styles.heroTagText}>Today's Presence</Text>
+            <Ionicons name="shield-checkmark" size={16} color={isDark ? colors.accentCyan : colors.primary} />
+            <Text style={[styles.heroTagText, { color: isDark ? colors.accentCyan : colors.primary }]}>Today's Presence</Text>
           </View>
           {todayRecord ? (
             <StatusBadge
@@ -228,31 +248,40 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
 
         {todayRecord ? (
           <View style={styles.activeRecordBox}>
-            <View style={styles.timeRow}>
+            <View
+              style={[
+                styles.timeRow,
+                {
+                  backgroundColor: colors.secondaryBackground,
+                  borderColor: colors.border,
+                  borderWidth: 1,
+                },
+              ]}
+            >
               <View style={styles.timeBlock}>
-                <Text style={styles.timeBlockLabel}>CHECK IN</Text>
-                <Text style={styles.timeBlockValue}>
+                <Text style={[styles.timeBlockLabel, { color: colors.textMuted }]}>CHECK IN</Text>
+                <Text style={[styles.timeBlockValue, { color: colors.textPrimary }]}>
                   {formatTime(todayRecord.check_in)}
                 </Text>
-                <Text style={styles.timeBlockSource}>{todayRecord.source}</Text>
+                <Text style={[styles.timeBlockSource, { color: colors.textSecondary }]}>{todayRecord.source}</Text>
               </View>
 
               <View style={styles.durationDivider}>
-                <Ionicons name="arrow-forward" size={16} color="#9CA3AF" />
-                <Text style={styles.durationText}>
+                <Ionicons name="arrow-forward" size={16} color={colors.textMuted} />
+                <Text style={[styles.durationText, { color: isDark ? colors.accentCyan : colors.primary }]}>
                   {liveDuration}
                 </Text>
-                <Text style={styles.durationSubText}>
+                <Text style={[styles.durationSubText, { color: colors.textMuted }]}>
                   {todayRecord.check_out ? 'Final' : 'Live'}
                 </Text>
               </View>
 
               <View style={styles.timeBlock}>
-                <Text style={styles.timeBlockLabel}>CHECK OUT</Text>
-                <Text style={styles.timeBlockValue}>
+                <Text style={[styles.timeBlockLabel, { color: colors.textMuted }]}>CHECK OUT</Text>
+                <Text style={[styles.timeBlockValue, { color: colors.textPrimary }]}>
                   {todayRecord.check_out ? formatTime(todayRecord.check_out) : '--:--'}
                 </Text>
-                <Text style={styles.timeBlockSource}>
+                <Text style={[styles.timeBlockSource, { color: colors.textSecondary }]}>
                   {todayRecord.check_out ? 'Concluded' : 'In Progress'}
                 </Text>
               </View>
@@ -262,7 +291,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
             {!todayRecord.check_out ? (
               <View style={styles.actionContainer}>
                 <TouchableOpacity
-                  style={[styles.checkoutBtn, isSubmitting && styles.btnDisabled]}
+                  style={[
+                    styles.checkoutBtn,
+                    { backgroundColor: colors.danger, shadowColor: colors.danger },
+                    isSubmitting && styles.btnDisabled,
+                  ]}
                   onPress={handleCheckOut}
                   disabled={isSubmitting}
                   activeOpacity={0.8}
@@ -276,7 +309,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
                     </>
                   )}
                 </TouchableOpacity>
-                <Text style={styles.actionHelperText}>
+                <Text style={[styles.actionHelperText, { color: colors.textSecondary }]}>
                   Shift in progress ({liveDuration} elapsed). No full attendance credit until shift completion. Tap above when leaving.
                 </Text>
               </View>
@@ -290,48 +323,96 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
 
               return isFullShift ? (
                 <View style={styles.completedContainer}>
-                  <View style={styles.completedNotice}>
-                    <Ionicons name="checkmark-done-circle" size={20} color="#10B981" />
-                    <Text style={styles.completedText}>
+                  <View
+                    style={[
+                      styles.completedNotice,
+                      {
+                        backgroundColor: colors.successBg,
+                        borderColor: isDark ? 'rgba(52, 211, 153, 0.4)' : '#A7F3D0',
+                      },
+                    ]}
+                  >
+                    <Ionicons name="checkmark-done-circle" size={20} color={colors.success} />
+                    <Text style={[styles.completedText, { color: colors.success }]}>
                       Office day marked complete for today.
                     </Text>
                   </View>
 
                   {/* Finalized Action Banner */}
-                  <View style={styles.finalizedActionBar}>
-                    <Ionicons name="lock-closed" size={16} color="#059669" />
-                    <Text style={styles.finalizedActionText}>
+                  <View
+                    style={[
+                      styles.finalizedActionBar,
+                      {
+                        backgroundColor: colors.surfaceElevated,
+                        borderColor: isDark ? colors.borderSubtle : '#DCFCE7',
+                      },
+                    ]}
+                  >
+                    <Ionicons name="lock-closed" size={16} color={colors.success} />
+                    <Text style={[styles.finalizedActionText, { color: colors.success }]}>
                       Shift Finalized ({formatDuration(todayRecord.check_in, todayRecord.check_out)} total)
                     </Text>
                   </View>
 
                   {/* Explanation text */}
-                  <View style={styles.completedExplanation}>
-                    <Text style={styles.completedExplanationText}>
+                  <View
+                    style={[
+                      styles.completedExplanation,
+                      {
+                        backgroundColor: colors.secondaryBackground,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.completedExplanationText, { color: colors.textSecondary }]}>
                       Both check-in ({formatTime(todayRecord.check_in)}) and check-out ({formatTime(todayRecord.check_out)}) are recorded. Full qualifying shift (8.0+ hrs) satisfied.
                     </Text>
                   </View>
                 </View>
               ) : (
                 <View style={styles.completedContainer}>
-                  <View style={[styles.completedNotice, { backgroundColor: '#FEF3C7', borderColor: '#FDE68A' }]}>
-                    <Ionicons name="alert-circle-outline" size={20} color="#D97706" />
-                    <Text style={[styles.completedText, { color: '#B45309' }]}>
+                  <View
+                    style={[
+                      styles.completedNotice,
+                      {
+                        backgroundColor: colors.warningBg,
+                        borderColor: isDark ? 'rgba(251, 191, 36, 0.4)' : '#FDE68A',
+                      },
+                    ]}
+                  >
+                    <Ionicons name="alert-circle-outline" size={20} color={colors.warning} />
+                    <Text style={[styles.completedText, { color: colors.warning }]}>
                       Incomplete Shift ({formatDuration(todayRecord.check_in, todayRecord.check_out)} total).
                     </Text>
                   </View>
 
                   {/* Incomplete Shift Banner */}
-                  <View style={[styles.finalizedActionBar, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
-                    <Ionicons name="time" size={16} color="#D97706" />
-                    <Text style={[styles.finalizedActionText, { color: '#92400E' }]}>
+                  <View
+                    style={[
+                      styles.finalizedActionBar,
+                      {
+                        backgroundColor: colors.secondaryBackground,
+                        borderColor: isDark ? colors.borderSubtle : '#FDE68A',
+                      },
+                    ]}
+                  >
+                    <Ionicons name="time" size={16} color={colors.warning} />
+                    <Text style={[styles.finalizedActionText, { color: colors.warning }]}>
                       Shift Ended Early ({hrsWorked.toFixed(1)} hrs elapsed)
                     </Text>
                   </View>
 
                   {/* Explanation text */}
-                  <View style={styles.completedExplanation}>
-                    <Text style={styles.completedExplanationText}>
+                  <View
+                    style={[
+                      styles.completedExplanation,
+                      {
+                        backgroundColor: colors.secondaryBackground,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.completedExplanationText, { color: colors.textSecondary }]}>
                       Recorded check-in ({formatTime(todayRecord.check_in)}) and check-out ({formatTime(todayRecord.check_out)}). Did not satisfy 8.0-hour full attendance requirement (0 credit earned).
                     </Text>
                   </View>
@@ -341,17 +422,26 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
           </View>
         ) : (
           <View style={styles.unmarkedBox}>
-            <Text style={styles.unmarkedTitle}>Not Checked In Today</Text>
-            <Text style={styles.unmarkedSubtitle}>
-              You have not recorded attendance yet today. Please scan the active dynamic QR kiosk at your office reception to record presence.
+            <Text style={[styles.unmarkedTitle, { color: colors.textPrimary }]}>Not Checked In Today</Text>
+            <Text style={[styles.unmarkedSubtitle, { color: colors.textSecondary }]}>
+              Scan the active dynamic QR kiosk at your office entrance to record your presence for today.
             </Text>
 
             {/* Primary Check-In Action Button */}
             <TouchableOpacity
-              style={[styles.primaryCheckinBtn, isSubmitting && styles.btnDisabled]}
+              style={[
+                styles.primaryCheckinBtn,
+                {
+                  backgroundColor: colors.primary,
+                  shadowColor: isDark ? colors.accentCyan : colors.primary,
+                },
+                isSubmitting && styles.btnDisabled,
+              ]}
               onPress={() => onNavigateTab('scanner')}
               disabled={isSubmitting}
               activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Check In by scanning office QR code"
             >
               <Ionicons name="qr-code-outline" size={22} color="#FFFFFF" />
               <Text style={styles.primaryCheckinBtnText}>Check In (Scan Office QR)</Text>
@@ -363,131 +453,186 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
       {/* Overview Stats (4 Cards) */}
       <View style={styles.statsGrid}>
         <TouchableOpacity
-          style={styles.statCard}
+          style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
           onPress={() => onNavigateTab('history')}
           activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={`Present Days: ${stats.presentDays}`}
         >
-          <View style={[styles.statIcon, { backgroundColor: '#ECFDF5' }]}>
-            <Ionicons name="checkmark-circle-outline" size={18} color="#16A34A" />
-          </View>
-          <Text style={styles.statVal}>{stats.presentDays}</Text>
-          <Text style={styles.statTitle}>Present Days</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.statCard}
-          onPress={() => onNavigateTab('history')}
-          activeOpacity={0.7}
-        >
-          <View style={[styles.statIcon, { backgroundColor: '#FEF3C7' }]}>
-            <Ionicons name="time-outline" size={18} color="#D97706" />
-          </View>
-          <Text style={styles.statVal}>{stats.lateDays}</Text>
-          <Text style={styles.statTitle}>Late Arrivals</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.statCard}
-          onPress={() => onNavigateTab('history')}
-          activeOpacity={0.7}
-        >
-          <View style={[styles.statIcon, { backgroundColor: '#EEF2FF' }]}>
-            <Ionicons name="pie-chart-outline" size={18} color="#4F46E5" />
-          </View>
-          <Text style={styles.statVal}>
-            {stats.totalRecords > 0 ? `${stats.attendancePercentage}%` : '100%'}
-          </Text>
-          <Text style={styles.statTitle}>Attendance Rate</Text>
-        </TouchableOpacity>
-
-        <View style={styles.statCard}>
           <View
             style={[
               styles.statIcon,
-              { backgroundColor: isBackendOnline ? '#ECFDF5' : '#FEF2F2' },
+              { backgroundColor: isDark ? 'rgba(52, 211, 153, 0.15)' : '#ECFDF5' },
+            ]}
+          >
+            <Ionicons name="checkmark-circle-outline" size={18} color={colors.success} />
+          </View>
+          <Text style={[styles.statVal, { color: colors.textPrimary }]}>{stats.presentDays}</Text>
+          <Text style={[styles.statTitle, { color: colors.textSecondary }]}>Present Days</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          onPress={() => onNavigateTab('history')}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={`Late Arrivals: ${stats.lateDays}`}
+        >
+          <View
+            style={[
+              styles.statIcon,
+              { backgroundColor: isDark ? 'rgba(251, 191, 36, 0.15)' : '#FEF3C7' },
+            ]}
+          >
+            <Ionicons name="time-outline" size={18} color={colors.warning} />
+          </View>
+          <Text style={[styles.statVal, { color: colors.textPrimary }]}>{stats.lateDays}</Text>
+          <Text style={[styles.statTitle, { color: colors.textSecondary }]}>Late Arrivals</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          onPress={() => onNavigateTab('history')}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={`Historical Attendance Rate: ${stats.totalRecords > 0 ? stats.attendancePercentage : 100} percent`}
+        >
+          <View
+            style={[
+              styles.statIcon,
+              { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#EEF2FF' },
+            ]}
+          >
+            <Ionicons name="pie-chart-outline" size={18} color={isDark ? colors.accentCyan : colors.primary} />
+          </View>
+          <Text style={[styles.statVal, { color: colors.textPrimary }]}>
+            {stats.totalRecords > 0 ? `${stats.attendancePercentage}%` : '100%'}
+          </Text>
+          <Text style={[styles.statTitle, { color: colors.textSecondary }]}>Attendance Rate</Text>
+          <Text style={[styles.statSubText, { color: colors.textMuted }]}>Historical Record</Text>
+        </TouchableOpacity>
+
+        <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View
+            style={[
+              styles.statIcon,
+              {
+                backgroundColor: isBackendOnline
+                  ? isDark ? 'rgba(52, 211, 153, 0.15)' : '#ECFDF5'
+                  : isDark ? 'rgba(251, 113, 133, 0.15)' : '#FEF2F2',
+              },
             ]}
           >
             <Ionicons
               name={isBackendOnline ? 'cloud-done-outline' : 'cloud-offline-outline'}
               size={18}
-              color={isBackendOnline ? '#059669' : '#DC2626'}
+              color={isBackendOnline ? colors.success : colors.danger}
             />
           </View>
-          <Text style={styles.statVal}>
+          <Text style={[styles.statVal, { color: colors.textPrimary }]}>
             {isBackendOnline ? 'Online' : 'Offline'}
           </Text>
-          <Text style={styles.statTitle}>Server Sync</Text>
+          <Text style={[styles.statTitle, { color: colors.textSecondary }]}>Server Sync</Text>
         </View>
       </View>
 
       {/* Quick Action Shortcuts */}
-      <Text style={styles.sectionHeader}>Quick Actions</Text>
+      <Text style={[styles.sectionHeader, { color: colors.textPrimary }]}>Quick Actions</Text>
       <View style={styles.shortcutsGrid}>
         <TouchableOpacity
-          style={styles.actionItem}
+          style={[styles.actionItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
           onPress={handleQuickScanPress}
           activeOpacity={0.7}
         >
-          <View style={[styles.actionIcon, { backgroundColor: '#EEF2FF' }]}>
-            <Ionicons name="scan" size={22} color="#4F46E5" />
+          <View
+            style={[
+              styles.actionIcon,
+              { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#EEF2FF' },
+            ]}
+          >
+            <Ionicons name="scan" size={22} color={isDark ? colors.accentCyan : colors.primary} />
           </View>
-          <Text style={styles.actionLabel}>Scan QR</Text>
-          <Text style={styles.actionDesc}>Entrance gate</Text>
+          <Text style={[styles.actionLabel, { color: colors.textPrimary }]}>Scan QR</Text>
+          <Text style={[styles.actionDesc, { color: colors.textMuted }]}>Entrance gate</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.actionItem}
+          style={[styles.actionItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
           onPress={() => onNavigateTab('leave')}
           activeOpacity={0.7}
         >
-          <View style={[styles.actionIcon, { backgroundColor: '#FEF3C7' }]}>
-            <Ionicons name="calendar-clear-outline" size={22} color="#D97706" />
+          <View
+            style={[
+              styles.actionIcon,
+              { backgroundColor: isDark ? 'rgba(251, 191, 36, 0.15)' : '#FEF3C7' },
+            ]}
+          >
+            <Ionicons name="calendar-clear-outline" size={22} color={colors.warning} />
           </View>
-          <Text style={styles.actionLabel}>Apply Leave</Text>
-          <Text style={styles.actionDesc}>Vacation / Sick</Text>
+          <Text style={[styles.actionLabel, { color: colors.textPrimary }]}>Apply Leave</Text>
+          <Text style={[styles.actionDesc, { color: colors.textMuted }]}>Vacation / Sick</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.actionItem}
+          style={[styles.actionItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
           onPress={() => onNavigateTab('wfh')}
           activeOpacity={0.7}
         >
-          <View style={[styles.actionIcon, { backgroundColor: '#F0FDFA' }]}>
-            <Ionicons name="desktop-outline" size={22} color="#0D9488" />
+          <View
+            style={[
+              styles.actionIcon,
+              { backgroundColor: isDark ? 'rgba(34, 211, 238, 0.15)' : '#F0FDFA' },
+            ]}
+          >
+            <Ionicons name="desktop-outline" size={22} color={isDark ? colors.accentCyan : '#0D9488'} />
           </View>
-          <Text style={styles.actionLabel}>Request WFH</Text>
-          <Text style={styles.actionDesc}>Remote work days</Text>
+          <Text style={[styles.actionLabel, { color: colors.textPrimary }]}>Request WFH</Text>
+          <Text style={[styles.actionDesc, { color: colors.textMuted }]}>Remote work days</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.actionItem}
+          style={[styles.actionItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
           onPress={() => onNavigateTab('history')}
           activeOpacity={0.7}
         >
-          <View style={[styles.actionIcon, { backgroundColor: '#F0FDF4' }]}>
-            <Ionicons name="list-outline" size={22} color="#16A34A" />
+          <View
+            style={[
+              styles.actionIcon,
+              { backgroundColor: isDark ? 'rgba(52, 211, 153, 0.15)' : '#F0FDF4' },
+            ]}
+          >
+            <Ionicons name="list-outline" size={22} color={colors.success} />
           </View>
-          <Text style={styles.actionLabel}>Attendance</Text>
-          <Text style={styles.actionDesc}>Past records</Text>
+          <Text style={[styles.actionLabel, { color: colors.textPrimary }]}>Attendance</Text>
+          <Text style={[styles.actionDesc, { color: colors.textMuted }]}>Past records</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Recent Attendance History (Requirement 8) */}
+      {/* Recent Attendance History */}
       <View style={styles.recentHeaderRow}>
-        <Text style={styles.recentTitle}>Recent Attendance</Text>
+        <Text style={[styles.recentTitle, { color: colors.textPrimary }]}>Recent Attendance</Text>
         <TouchableOpacity onPress={() => onNavigateTab('history')} activeOpacity={0.7}>
-          <Text style={styles.viewAllLink}>View All History</Text>
+          <Text style={[styles.viewAllLink, { color: isDark ? colors.accentCyan : colors.primary }]}>View All History</Text>
         </TouchableOpacity>
       </View>
 
       {recentRecords.length > 0 ? (
         <View style={styles.recentList}>
           {recentRecords.slice(0, 5).map((record) => (
-            <View key={record.id} style={styles.recentCard}>
+            <View
+              key={record.id}
+              style={[
+                styles.recentCard,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: isDark ? colors.borderSubtle : colors.border,
+                },
+              ]}
+            >
               <View style={styles.recentCardHeader}>
                 <View style={styles.recentDateRow}>
-                  <Ionicons name="calendar-outline" size={15} color="#6366F1" />
-                  <Text style={styles.recentDateText}>{record.attendance_date}</Text>
+                  <Ionicons name="calendar-outline" size={15} color={isDark ? colors.accentCyan : colors.primary} />
+                  <Text style={[styles.recentDateText, { color: colors.textPrimary }]}>{record.attendance_date}</Text>
                 </View>
                 <StatusBadge
                   status={
@@ -503,14 +648,23 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
 
               <View style={styles.recentDetailsRow}>
                 <View style={styles.recentTimeBlock}>
-                  <Ionicons name="time-outline" size={13} color="#64748B" />
-                  <Text style={styles.recentTimeText}>
+                  <Ionicons name="time-outline" size={13} color={colors.textMuted} />
+                  <Text style={[styles.recentTimeText, { color: colors.textSecondary }]}>
                     {formatTime(record.check_in)} → {record.check_out ? formatTime(record.check_out) : 'In Progress'}
                   </Text>
                 </View>
 
-                <View style={styles.recentDurationBadge}>
-                  <Text style={styles.recentDurationText}>
+                <View
+                  style={[
+                    styles.recentDurationBadge,
+                    {
+                      backgroundColor: isDark ? colors.surfaceElevated : colors.primaryLight,
+                      borderColor: colors.border,
+                      borderWidth: isDark ? 1 : 0,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.recentDurationText, { color: isDark ? colors.accentCyan : colors.primary }]}>
                     {formatDuration(record.check_in, record.check_out, false)}
                   </Text>
                 </View>
@@ -519,10 +673,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateTab }) => {
           ))}
         </View>
       ) : (
-        <View style={styles.emptyRecentCard}>
-          <Ionicons name="document-text-outline" size={28} color="#94A3B8" />
-          <Text style={styles.emptyRecentTitle}>No Recent Records Found</Text>
-          <Text style={styles.emptyRecentSubtitle}>
+        <View
+          style={[
+            styles.emptyRecentCard,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <Ionicons name="document-text-outline" size={28} color={colors.textMuted} />
+          <Text style={[styles.emptyRecentTitle, { color: colors.textPrimary }]}>No Recent Records Found</Text>
+          <Text style={[styles.emptyRecentSubtitle, { color: colors.textMuted }]}>
             Check in or scan the office QR code to start building your verified presence record.
           </Text>
         </View>
@@ -537,14 +699,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   content: {
-    padding: 20,
-    paddingBottom: 90,
+    padding: 16,
+    paddingBottom: 110,
   },
   timeCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 14,
   },
   dateLabel: {
     fontSize: 13,
@@ -568,8 +730,8 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: 18,
+    padding: 16,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     shadowColor: '#000000',
@@ -577,13 +739,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 10,
     elevation: 2,
-    marginBottom: 20,
+    marginBottom: 16,
   },
   heroHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 14,
   },
   heroTag: {
     flexDirection: 'row',
@@ -654,6 +816,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#DC2626',
     borderRadius: 14,
+    minHeight: 50,
     paddingVertical: 14,
     gap: 8,
     shadowColor: '#DC2626',
@@ -724,21 +887,21 @@ const styles = StyleSheet.create({
   },
   unmarkedBox: {
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 4,
   },
   unmarkedTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '800',
     color: '#0F172A',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   unmarkedSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#64748B',
     textAlign: 'center',
-    lineHeight: 18,
-    marginBottom: 18,
-    paddingHorizontal: 10,
+    lineHeight: 17,
+    marginBottom: 14,
+    paddingHorizontal: 8,
   },
   primaryCheckinBtn: {
     flexDirection: 'row',
@@ -747,18 +910,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#4F46E5',
     width: '100%',
     borderRadius: 14,
-    paddingVertical: 15,
+    minHeight: 50,
+    paddingVertical: 14,
     gap: 10,
     shadowColor: '#4F46E5',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
     elevation: 4,
-    marginBottom: 10,
+    marginBottom: 0,
   },
   primaryCheckinBtnText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
   },
   btnDisabled: {
@@ -768,24 +932,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   statCard: {
     width: '48%',
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 14,
+    padding: 12,
+    minHeight: 92,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   statIcon: {
-    width: 36,
-    height: 36,
+    width: 34,
+    height: 34,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   statVal: {
     fontSize: 16,
@@ -796,7 +962,12 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#64748B',
     marginTop: 2,
-    fontWeight: '500',
+    fontWeight: '600',
+  },
+  statSubText: {
+    fontSize: 9,
+    fontWeight: '600',
+    marginTop: 1,
   },
   sectionHeader: {
     fontSize: 15,

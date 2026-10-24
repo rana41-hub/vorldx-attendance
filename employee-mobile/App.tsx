@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { requireOptionalNativeModule } from 'expo';
 import { AppProvider, useApp } from './src/context/AppContext';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { Header } from './src/components/Header';
 import { Toast } from './src/components/Toast';
 import { BottomNav, type TabType } from './src/components/BottomNav';
@@ -17,6 +18,7 @@ import { ProfileScreen } from './src/screens/ProfileScreen';
 
 const MainApp: React.FC = () => {
   const { isAuthenticated, isRestoringSession } = useApp();
+  const { colors, resolvedTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<TabType>('home');
 
   useEffect(() => {
@@ -32,11 +34,16 @@ const MainApp: React.FC = () => {
 
   if (isRestoringSession) {
     return (
-      <SafeAreaView style={styles.splashContainer} edges={['top', 'bottom', 'left', 'right']}>
-        <StatusBar style="dark" />
+      <SafeAreaView
+        style={[styles.splashContainer, { backgroundColor: colors.background }]}
+        edges={['top', 'bottom', 'left', 'right']}
+      >
+        <StatusBar style={resolvedTheme === 'dark' ? 'light' : 'dark'} />
         <View style={styles.splashContent}>
-          <ActivityIndicator size="large" color="#4F46E5" />
-          <Text style={styles.splashText}>Restoring VorldX Session...</Text>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.splashText, { color: colors.textSecondary }]}>
+            Restoring VorldX Session...
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -44,8 +51,11 @@ const MainApp: React.FC = () => {
 
   if (!isAuthenticated) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
-        <StatusBar style="dark" />
+      <SafeAreaView
+        style={[styles.safeArea, { backgroundColor: colors.background }]}
+        edges={['top', 'left', 'right', 'bottom']}
+      >
+        <StatusBar style={resolvedTheme === 'dark' ? 'light' : 'dark'} />
         <Toast />
         <LoginScreen />
       </SafeAreaView>
@@ -53,15 +63,18 @@ const MainApp: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-      <StatusBar style="dark" />
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: colors.navBackground }]}
+      edges={['top', 'left', 'right']}
+    >
+      <StatusBar style={resolvedTheme === 'dark' ? 'light' : 'dark'} />
       <Toast />
 
       {activeTab !== 'scanner' && (
         <Header onOpenProfile={() => setActiveTab('profile')} />
       )}
 
-      <View style={styles.contentContainer}>
+      <View style={[styles.contentContainer, { backgroundColor: colors.background }]}>
         {activeTab === 'home' && (
           <HomeScreen onNavigateTab={(tab) => setActiveTab(tab)} />
         )}
@@ -87,9 +100,11 @@ const MainApp: React.FC = () => {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <AppProvider>
-        <MainApp />
-      </AppProvider>
+      <ThemeProvider>
+        <AppProvider>
+          <MainApp />
+        </AppProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }
@@ -97,15 +112,12 @@ export default function App() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
   contentContainer: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
   splashContainer: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -115,7 +127,6 @@ const styles = StyleSheet.create({
   },
   splashText: {
     fontSize: 14,
-    color: '#64748B',
     fontWeight: '600',
   },
 });

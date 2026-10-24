@@ -171,34 +171,34 @@ export const KioskPage: React.FC = () => {
   const strokeDashoffset = 100 - progressRatio * 100;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between selection:bg-indigo-500 selection:text-white relative overflow-hidden font-sans">
-      {/* Subtle Background Glows */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-screen bg-slate-950 dark:bg-[#050B18] text-slate-100 flex flex-col justify-between selection:bg-cyan-500 selection:text-white relative overflow-hidden font-sans">
+      {/* Subtle Ambient Cyberpunk Glows */}
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-600/10 dark:bg-[#3B82F6]/15 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-cyan-600/10 dark:bg-[#22D3EE]/10 rounded-full blur-3xl pointer-events-none" />
 
       {/* Top Header Bar */}
-      <header className="px-6 py-4 flex items-center justify-between border-b border-slate-900 bg-slate-950/80 backdrop-blur-md z-10">
+      <header className="px-6 py-4 flex items-center justify-between border-b border-slate-900 dark:border-[#203653] bg-slate-950/80 dark:bg-[#071020]/90 backdrop-blur-md z-10">
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate('/')}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white transition-colors text-xs font-medium cursor-pointer"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-[#0C1930] hover:bg-slate-800 dark:hover:bg-[#10213D] border border-slate-800 dark:border-[#203653] text-slate-300 dark:text-[#A9BCD8] hover:text-white transition-colors text-xs font-medium cursor-pointer"
             title="Return to Admin Dashboard"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-4 h-4 text-cyan-400" />
             <span>Admin Portal</span>
           </button>
 
-          <div className="h-4 w-px bg-slate-800 hidden sm:block" />
+          <div className="h-4 w-px bg-slate-800 dark:bg-[#203653] hidden sm:block" />
 
           <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
+            <div className="h-8 w-8 rounded-lg bg-indigo-600 dark:bg-[#3B82F6] flex items-center justify-center text-white shadow-md shadow-blue-500/20">
               <Building2 className="w-4 h-4" />
             </div>
             <div>
-              <div className="text-sm font-semibold tracking-wide text-white">
+              <div className="text-sm font-semibold tracking-wide text-white dark:text-[#EAF2FF]">
                 VorldX Attendance Kiosk
               </div>
-              <div className="text-[11px] text-slate-400 flex items-center gap-1.5">
+              <div className="text-[11px] text-slate-400 dark:text-[#7E93B5] flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 <span>Office Check-in Terminal</span>
               </div>
@@ -209,26 +209,27 @@ export const KioskPage: React.FC = () => {
         {/* Live Digital Clock & Office Badge */}
         <div className="flex items-center gap-3">
           <div className="hidden md:flex flex-col items-end mr-2">
-            <span className="font-mono text-base font-bold text-white tracking-wider">
+            <span className="font-mono text-base font-bold text-white dark:text-[#EAF2FF] tracking-wider">
               {timeFormatted}
             </span>
-            <span className="text-[11px] text-slate-400">{dateFormatted}</span>
+            <span className="text-[11px] text-slate-400 dark:text-[#7E93B5]">{dateFormatted}</span>
           </div>
 
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs font-medium text-slate-300">
-            <span className="text-slate-500">Location:</span>
-            <span className="font-mono text-indigo-400 font-semibold">{officeCode}</span>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-[#0C1930] border border-slate-800 dark:border-[#203653] text-xs font-medium text-slate-300 dark:text-[#A9BCD8]">
+            <span className="text-slate-500 dark:text-[#7E93B5]">Location:</span>
+            <span className="font-mono text-cyan-400 font-semibold">{officeCode}</span>
           </div>
 
           <button
             onClick={toggleFullscreen}
-            className="p-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer"
+            className="p-2 rounded-lg bg-slate-900 dark:bg-[#0C1930] hover:bg-slate-800 dark:hover:bg-[#10213D] border border-slate-800 dark:border-[#203653] text-slate-300 dark:text-[#A9BCD8] hover:text-white transition-colors cursor-pointer"
             title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+            aria-label={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
           >
             {isFullscreen ? (
-              <Minimize2 className="w-4 h-4" />
+              <Minimize2 className="w-4 h-4 text-cyan-400" />
             ) : (
-              <Maximize2 className="w-4 h-4" />
+              <Maximize2 className="w-4 h-4 text-cyan-400" />
             )}
           </button>
         </div>
@@ -238,22 +239,22 @@ export const KioskPage: React.FC = () => {
       <main className="flex-1 flex flex-col items-center justify-center p-6 z-10 max-w-4xl mx-auto w-full">
         {/* Terminal Title & Subtitle */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-950/60 border border-indigo-800/50 text-indigo-300 text-xs font-medium mb-3">
-            <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-950/60 dark:bg-[#0C1930] border border-indigo-800/50 dark:border-[#164E63] text-indigo-300 dark:text-[#22D3EE] text-xs font-medium mb-3">
+            <ShieldCheck className="w-3.5 h-3.5 text-indigo-400 dark:text-[#22D3EE]" />
             <span>High-Security Dynamic QR Protocol</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-2">
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white dark:text-[#EAF2FF] mb-2">
             Scan to Record Attendance
           </h1>
-          <p className="text-sm text-slate-400 max-w-md mx-auto">
+          <p className="text-sm text-slate-400 dark:text-[#7E93B5] max-w-md mx-auto">
             Point your VorldX Employee Mobile App camera at the QR code below. Code automatically rotates every 18 seconds to prevent replay.
           </p>
         </div>
 
-        {/* Central Display Card */}
-        <div className="relative p-6 sm:p-8 rounded-3xl bg-slate-900/90 border border-slate-800 shadow-2xl backdrop-blur-xl flex flex-col items-center w-full max-w-md transition-all">
-          {/* QR Display Container */}
-          <div className="relative w-80 h-80 rounded-2xl bg-white p-4 shadow-inner flex items-center justify-center overflow-hidden border-4 border-slate-800/80">
+        {/* Central Display Card with Cyberpunk Elevated Surface and Restrained Cyan Border */}
+        <div className="relative p-6 sm:p-8 rounded-3xl bg-slate-900/90 dark:bg-[#0C1930]/95 border border-slate-800 dark:border-[#164E63] shadow-2xl dark:shadow-[0_0_40px_rgba(34,211,238,0.08)] backdrop-blur-xl flex flex-col items-center w-full max-w-md transition-all">
+          {/* QR Display Container - High-contrast white canvas for instant scanning */}
+          <div className="relative w-80 h-80 rounded-2xl bg-white p-4 shadow-inner flex items-center justify-center overflow-hidden border-4 border-slate-800/80 dark:border-[#203653]">
             {/* Active Canvas */}
             <canvas
               ref={canvasRef}
@@ -266,14 +267,14 @@ export const KioskPage: React.FC = () => {
 
             {/* Loading / Refreshing Overlay */}
             {(isLoading || isRotating || (secondsRemaining <= 0 && !errorMessage)) && (
-              <div className="absolute inset-0 bg-slate-900/95 flex flex-col items-center justify-center p-6 text-center text-slate-200">
-                <RefreshCw className="w-10 h-10 text-indigo-400 animate-spin mb-3" />
-                <p className="font-semibold text-sm text-white">
+              <div className="absolute inset-0 bg-slate-900/95 dark:bg-[#081426]/95 flex flex-col items-center justify-center p-6 text-center text-slate-200">
+                <RefreshCw className="w-10 h-10 text-cyan-400 animate-spin mb-3" />
+                <p className="font-semibold text-sm text-white dark:text-[#EAF2FF]">
                   {isLoading
                     ? 'Connecting to Kiosk Subsystem...'
                     : 'Rotating Dynamic QR Code...'}
                 </p>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-slate-400 dark:text-[#7E93B5] mt-1">
                   Generating secure one-time challenge
                 </p>
               </div>
@@ -281,11 +282,11 @@ export const KioskPage: React.FC = () => {
 
             {/* Error / Disconnected Overlay */}
             {errorMessage && (
-              <div className="absolute inset-0 bg-rose-950/95 flex flex-col items-center justify-center p-6 text-center text-slate-200">
+              <div className="absolute inset-0 bg-rose-950/95 dark:bg-[#081426]/95 flex flex-col items-center justify-center p-6 text-center text-slate-200">
                 <div className="w-12 h-12 rounded-full bg-rose-900/50 flex items-center justify-center mb-3 text-rose-400">
                   <WifiOff className="w-6 h-6 animate-pulse" />
                 </div>
-                <p className="font-bold text-sm text-white mb-1">
+                <p className="font-bold text-sm text-white dark:text-[#EAF2FF] mb-1">
                   Terminal Disconnected
                 </p>
                 <p className="text-xs text-rose-300/80 mb-4 px-2 line-clamp-2">
@@ -303,14 +304,14 @@ export const KioskPage: React.FC = () => {
           </div>
 
           {/* Countdown & Status Bar */}
-          <div className="w-full mt-6 flex items-center justify-between pt-4 border-t border-slate-800">
+          <div className="w-full mt-6 flex items-center justify-between pt-4 border-t border-slate-800 dark:border-[#203653]">
             {/* Circular Progress & Seconds */}
             <div className="flex items-center gap-3">
               <div className="relative w-10 h-10 flex items-center justify-center">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
                   {/* Track */}
                   <path
-                    className="text-slate-800"
+                    className="text-slate-800 dark:text-[#203653]"
                     strokeWidth="3.5"
                     stroke="currentColor"
                     fill="none"
@@ -323,7 +324,7 @@ export const KioskPage: React.FC = () => {
                         ? 'text-rose-500'
                         : secondsRemaining <= 10
                         ? 'text-amber-500'
-                        : 'text-emerald-500'
+                        : 'text-cyan-400'
                     }`}
                     strokeDasharray="100"
                     strokeDashoffset={strokeDashoffset}
@@ -340,7 +341,7 @@ export const KioskPage: React.FC = () => {
                       ? 'text-rose-400'
                       : secondsRemaining <= 10
                       ? 'text-amber-400'
-                      : 'text-emerald-400'
+                      : 'text-cyan-400'
                   }`}
                 >
                   {secondsRemaining}s
@@ -348,15 +349,15 @@ export const KioskPage: React.FC = () => {
               </div>
 
               <div>
-                <div className="text-xs font-medium text-white flex items-center gap-1.5">
+                <div className="text-xs font-medium text-white dark:text-[#EAF2FF] flex items-center gap-1.5">
                   <span>Dynamic Code Validity</span>
                   {errorMessage ? (
                     <span className="text-[10px] text-rose-400">(Offline)</span>
                   ) : (
-                    <span className="text-[10px] text-emerald-400">(Active)</span>
+                    <span className="text-[10px] text-cyan-400">(Active)</span>
                   )}
                 </div>
-                <div className="text-[11px] text-slate-400">
+                <div className="text-[11px] text-slate-400 dark:text-[#7E93B5]">
                   {secondsRemaining > 0
                     ? `Refreshes in ${secondsRemaining} second${secondsRemaining === 1 ? '' : 's'}`
                     : 'Refreshing token...'}
@@ -368,7 +369,7 @@ export const KioskPage: React.FC = () => {
             <button
               onClick={handleForceRotate}
               disabled={isRotating || isLoading}
-              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 dark:bg-[#10213D] dark:hover:bg-[#162c50] text-slate-300 dark:text-[#A9BCD8] hover:text-white dark:hover:text-[#EAF2FF] border border-slate-700 dark:border-[#203653] text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               title="Force immediate token rotation"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isRotating ? 'animate-spin' : ''}`} />
@@ -379,41 +380,41 @@ export const KioskPage: React.FC = () => {
 
         {/* Step-by-Step Mobile Instructions */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-xl mt-6 text-center">
-          <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800/60">
-            <div className="w-5 h-5 rounded-full bg-indigo-900/60 text-indigo-400 font-bold text-xs flex items-center justify-center mx-auto mb-1">
+          <div className="p-3 rounded-xl bg-slate-900/60 dark:bg-[#0C1930]/80 border border-slate-800/60 dark:border-[#203653]">
+            <div className="w-5 h-5 rounded-full bg-cyan-950/60 text-cyan-400 border border-cyan-800/50 font-bold text-xs flex items-center justify-center mx-auto mb-1">
               1
             </div>
-            <div className="text-xs font-medium text-slate-200">Open Mobile App</div>
-            <div className="text-[11px] text-slate-400">Log in with Employee ID</div>
+            <div className="text-xs font-medium text-slate-200 dark:text-[#EAF2FF]">Open Mobile App</div>
+            <div className="text-[11px] text-slate-400 dark:text-[#7E93B5]">Log in with Employee ID</div>
           </div>
 
-          <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800/60">
-            <div className="w-5 h-5 rounded-full bg-indigo-900/60 text-indigo-400 font-bold text-xs flex items-center justify-center mx-auto mb-1">
+          <div className="p-3 rounded-xl bg-slate-900/60 dark:bg-[#0C1930]/80 border border-slate-800/60 dark:border-[#203653]">
+            <div className="w-5 h-5 rounded-full bg-cyan-950/60 text-cyan-400 border border-cyan-800/50 font-bold text-xs flex items-center justify-center mx-auto mb-1">
               2
             </div>
-            <div className="text-xs font-medium text-slate-200">Tap Scan Office QR</div>
-            <div className="text-[11px] text-slate-400">On your mobile Dashboard</div>
+            <div className="text-xs font-medium text-slate-200 dark:text-[#EAF2FF]">Tap Scan Office QR</div>
+            <div className="text-[11px] text-slate-400 dark:text-[#7E93B5]">On your mobile Dashboard</div>
           </div>
 
-          <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800/60">
-            <div className="w-5 h-5 rounded-full bg-indigo-900/60 text-indigo-400 font-bold text-xs flex items-center justify-center mx-auto mb-1">
+          <div className="p-3 rounded-xl bg-slate-900/60 dark:bg-[#0C1930]/80 border border-slate-800/60 dark:border-[#203653]">
+            <div className="w-5 h-5 rounded-full bg-cyan-950/60 text-cyan-400 border border-cyan-800/50 font-bold text-xs flex items-center justify-center mx-auto mb-1">
               3
             </div>
-            <div className="text-xs font-medium text-slate-200">Scan & Check In</div>
-            <div className="text-[11px] text-slate-400">Immediate verification</div>
+            <div className="text-xs font-medium text-slate-200 dark:text-[#EAF2FF]">Scan & Check In</div>
+            <div className="text-[11px] text-slate-400 dark:text-[#7E93B5]">Immediate verification</div>
           </div>
         </div>
       </main>
 
       {/* Bottom Footer Info */}
-      <footer className="px-6 py-3 border-t border-slate-900 text-center text-xs text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-2 bg-slate-950/60">
+      <footer className="px-6 py-3 border-t border-slate-900 dark:border-[#203653] text-center text-xs text-slate-400 dark:text-[#7E93B5] flex flex-col sm:flex-row items-center justify-between gap-2 bg-slate-950/60 dark:bg-[#071020]/80">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-500" />
           <span>VorldX Enterprise Attendance System</span>
         </div>
         <div>
           Official Office Terminal • Session ID:{' '}
-          <span className="font-mono text-slate-300">
+          <span className="font-mono text-slate-300 dark:text-cyan-400">
             {session?.session_id ?? '---'}
           </span>
         </div>

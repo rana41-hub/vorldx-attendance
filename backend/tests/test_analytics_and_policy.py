@@ -220,6 +220,7 @@ def test_policy_late_arrival_and_early_departure_enforcement(client):
     client.put(
         "/api/v1/attendance/policy",
         json={
+            "work_start_time": "09:00:00",
             "auto_detect_late_arrival": False,
             "auto_detect_early_departure": False,
         },

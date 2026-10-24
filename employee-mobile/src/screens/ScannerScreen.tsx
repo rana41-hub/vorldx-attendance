@@ -11,6 +11,7 @@ import {
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
+import { useTheme } from '../context/ThemeContext';
 import { ApiService } from '../services/api';
 import { formatTime } from '../utils/formatters';
 
@@ -79,6 +80,7 @@ const parseScannedQR = (
 
 export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onSuccess, onCancel }) => {
   const { currentEmployee, todayRecord, refreshTodayStatus, showToast } = useApp();
+  const { colors, isDark } = useTheme();
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState<'back' | 'front'>('back');
   const [enableTorch, setEnableTorch] = useState(false);
@@ -197,53 +199,77 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onSuccess, onCance
   // Render permission request view
   if (!permission) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#4F46E5" />
-        <Text style={styles.loadingText}>Initializing camera...</Text>
+      <View style={[styles.centerContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Initializing camera...</Text>
       </View>
     );
   }
 
   if (!permission.granted || cameraError) {
     return (
-      <View style={styles.permissionContainer}>
-        <View style={styles.iconCircle}>
+      <View style={[styles.permissionContainer, { backgroundColor: colors.surface }]}>
+        <View
+          style={[
+            styles.iconCircle,
+            { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#EEF2FF' },
+          ]}
+        >
           <Ionicons
             name={cameraError ? 'alert-circle-outline' : 'camera-outline'}
             size={48}
-            color={cameraError ? '#EF4444' : '#4F46E5'}
+            color={cameraError ? colors.danger : colors.primary}
           />
         </View>
-        <Text style={styles.permissionTitle}>
+        <Text style={[styles.permissionTitle, { color: colors.textPrimary }]}>
           {cameraError ? 'Camera Unavailable' : 'Camera Access Required'}
         </Text>
-        <Text style={styles.permissionSubtitle}>
+        <Text style={[styles.permissionSubtitle, { color: colors.textSecondary }]}>
           {cameraError
             ? `The camera could not be accessed (${cameraError}). You may use the fallback below to submit your dynamic office token.`
             : 'To verify office presence, scan the dynamic QR code displayed on the official office terminal screen.'}
         </Text>
 
         {!cameraError && (
-          <TouchableOpacity style={styles.grantBtn} onPress={requestPermission} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={[styles.grantBtn, { backgroundColor: colors.primary }]}
+            onPress={requestPermission}
+            activeOpacity={0.8}
+          >
             <Text style={styles.grantBtnText}>Grant Camera Permission</Text>
           </TouchableOpacity>
         )}
 
         {/* Manual Fallback for Simulator / Testing */}
-        <View style={styles.manualFallbackCard}>
-          <Text style={styles.fallbackTitle}>Simulator / Test Fallback</Text>
+        <View
+          style={[
+            styles.manualFallbackCard,
+            {
+              backgroundColor: colors.secondaryBackground,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <Text style={[styles.fallbackTitle, { color: colors.textSecondary }]}>Simulator / Test Fallback</Text>
           <View style={styles.manualInputRow}>
             <TextInput
-              style={styles.manualInput}
+              style={[
+                styles.manualInput,
+                {
+                  backgroundColor: colors.inputBackground,
+                  borderColor: colors.inputBorder,
+                  color: colors.textPrimary,
+                },
+              ]}
               value={manualCode}
               onChangeText={setManualCode}
               placeholder="Paste QR JSON or raw token"
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={colors.textMuted}
               autoCapitalize="none"
               autoCorrect={false}
             />
             <TouchableOpacity
-              style={styles.manualSubmitBtn}
+              style={[styles.manualSubmitBtn, { backgroundColor: colors.primary }]}
               onPress={() => processCheckIn(manualCode)}
               disabled={isProcessing || !manualCode.trim()}
             >
@@ -257,11 +283,13 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onSuccess, onCance
         </View>
 
         <TouchableOpacity style={styles.cancelLink} onPress={onCancel}>
-          <Text style={styles.cancelLinkText}>Back to Dashboard</Text>
+          <Text style={[styles.cancelLinkText, { color: colors.textSecondary }]}>Back to Dashboard</Text>
         </TouchableOpacity>
       </View>
     );
   }
+
+  const cornerColor = isDark ? '#22D3EE' : '#3B82F6';
 
   return (
     <View style={styles.container}>
@@ -320,13 +348,13 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onSuccess, onCance
       <View style={styles.reticleContainer}>
         <View style={styles.reticleBox}>
           {/* Top-Left Corner */}
-          <View style={[styles.corner, styles.cornerTL]} />
+          <View style={[styles.corner, styles.cornerTL, { borderColor: cornerColor }]} />
           {/* Top-Right Corner */}
-          <View style={[styles.corner, styles.cornerTR]} />
+          <View style={[styles.corner, styles.cornerTR, { borderColor: cornerColor }]} />
           {/* Bottom-Left Corner */}
-          <View style={[styles.corner, styles.cornerBL]} />
+          <View style={[styles.corner, styles.cornerBL, { borderColor: cornerColor }]} />
           {/* Bottom-Right Corner */}
-          <View style={[styles.corner, styles.cornerBR]} />
+          <View style={[styles.corner, styles.cornerBR, { borderColor: cornerColor }]} />
 
           {isProcessing ? (
             <View style={styles.processingBadge}>
@@ -334,7 +362,15 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onSuccess, onCance
               <Text style={styles.processingText}>Verifying Dynamic QR...</Text>
             </View>
           ) : (
-            <View style={styles.scanLine} />
+            <View
+              style={[
+                styles.scanLine,
+                {
+                  backgroundColor: cornerColor,
+                  shadowColor: cornerColor,
+                },
+              ]}
+            />
           )}
         </View>
         <Text style={styles.helperText}>
@@ -343,19 +379,35 @@ export const ScannerScreen: React.FC<ScannerScreenProps> = ({ onSuccess, onCance
       </View>
 
       {/* Bottom Bar: Manual Input / Status */}
-      <View style={styles.bottomBar}>
+      <View
+        style={[
+          styles.bottomBar,
+          {
+            backgroundColor: isDark ? 'rgba(7, 16, 32, 0.94)' : 'rgba(15, 23, 42, 0.88)',
+            borderColor: isDark ? '#164E63' : 'transparent',
+            borderWidth: isDark ? 1 : 0,
+          },
+        ]}
+      >
         <View style={styles.bottomInputRow}>
           <TextInput
-            style={styles.bottomTextInput}
+            style={[
+              styles.bottomTextInput,
+              {
+                backgroundColor: isDark ? colors.surface : '#FFFFFF',
+                borderColor: isDark ? colors.border : '#E2E8F0',
+                color: colors.textPrimary,
+              },
+            ]}
             value={manualCode}
             onChangeText={setManualCode}
             placeholder="Paste Kiosk QR JSON or token..."
-            placeholderTextColor="#94A3B8"
+            placeholderTextColor={colors.textMuted}
             autoCapitalize="none"
             autoCorrect={false}
           />
           <TouchableOpacity
-            style={styles.bottomVerifyBtn}
+            style={[styles.bottomVerifyBtn, { backgroundColor: colors.primary }]}
             onPress={() => processCheckIn(manualCode)}
             disabled={isProcessing || !manualCode.trim()}
           >

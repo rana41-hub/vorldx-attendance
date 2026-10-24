@@ -140,10 +140,10 @@ export const WFHPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-slate-900">
+          <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-[#EAF2FF]">
             Work-from-Home (WFH) Management
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-slate-500 dark:text-[#7E93B5] mt-0.5">
             Audit, approve, and track employee remote work applications
           </p>
         </div>
@@ -152,7 +152,7 @@ export const WFHPage: React.FC = () => {
           <button
             onClick={loadData}
             disabled={isLoading}
-            className="p-2 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
+            className="p-2 border border-slate-200 dark:border-[#203653] rounded-lg text-slate-600 dark:text-[#A9BCD8] hover:bg-slate-50 dark:hover:bg-[#10213D] transition-colors disabled:opacity-50"
             title="Refresh WFH requests"
             aria-label="Refresh WFH requests"
           >
@@ -160,7 +160,7 @@ export const WFHPage: React.FC = () => {
           </button>
           <button
             onClick={() => setIsSubmitModalOpen(true)}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 shadow-xs transition-colors cursor-pointer"
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-indigo-600 dark:bg-[#3B82F6] text-white text-xs font-semibold hover:bg-indigo-700 dark:hover:bg-blue-600 shadow-xs transition-colors cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             Submit WFH Request
@@ -169,41 +169,41 @@ export const WFHPage: React.FC = () => {
       </div>
 
       {/* Policy Reminder Banner */}
-      <div className="p-3.5 rounded-xl bg-sky-50 border border-sky-200 text-sky-900 text-xs flex items-center gap-2.5">
-        <Info className="w-4 h-4 text-sky-600 shrink-0" />
+      <div className="p-3.5 rounded-xl bg-sky-50 dark:bg-[#164E63]/25 border border-sky-200 dark:border-[#164E63] text-sky-900 dark:text-[#22D3EE] text-xs flex items-center gap-2.5">
+        <Info className="w-4 h-4 text-sky-600 dark:text-[#22D3EE] shrink-0" />
         <span>
           <strong>Attendance Isolation Rule:</strong> Approving a Work-from-Home request records remote authorization, but does <strong>not</strong> automatically mark an employee present or create check-in records.
         </span>
       </div>
 
       {success && (
-        <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between">
+        <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 text-emerald-800 dark:text-emerald-300 text-xs flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+            <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
             <span>{success}</span>
           </div>
-          <button onClick={() => setSuccess(null)} className="font-bold">×</button>
+          <button onClick={() => setSuccess(null)} className="font-bold cursor-pointer">×</button>
         </div>
       )}
 
       {error && (
-        <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center justify-between">
+        <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 text-rose-800 dark:text-rose-300 text-xs flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
             <span className="leading-relaxed">{error}</span>
           </div>
-          <button onClick={() => setError(null)} className="font-bold">×</button>
+          <button onClick={() => setError(null)} className="font-bold cursor-pointer">×</button>
         </div>
       )}
 
       {/* Filter Toolbar */}
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs flex items-center gap-3">
-        <Filter className="w-4 h-4 text-slate-400" />
-        <span className="text-xs font-semibold text-slate-700">Filter Status:</span>
+      <div className="rounded-xl border border-slate-200 dark:border-[#203653] bg-white dark:bg-[#0C1930] p-4 shadow-xs flex items-center gap-3">
+        <Filter className="w-4 h-4 text-slate-400 dark:text-[#7E93B5]" />
+        <span className="text-xs font-semibold text-slate-700 dark:text-[#A9BCD8]">Filter Status:</span>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+          className="bg-slate-50 dark:bg-[#081426] border border-slate-200 dark:border-[#203653] rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-[#EAF2FF] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-cyan-500/20 focus:border-indigo-500 dark:focus:border-[#22D3EE]"
         >
           <option value="ALL">All Requests</option>
           <option value="PENDING">Pending Approval</option>
@@ -213,10 +213,10 @@ export const WFHPage: React.FC = () => {
       </div>
 
       {/* Table */}
-      <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
+      <div className="rounded-xl border border-slate-200 dark:border-[#203653] bg-white dark:bg-[#0C1930] shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-600">
-            <thead className="bg-slate-50/75 text-xs uppercase tracking-wider text-slate-500 border-b border-slate-100">
+          <table className="w-full text-left text-sm text-slate-600 dark:text-[#A9BCD8]">
+            <thead className="bg-slate-50/75 dark:bg-[#081426]/80 text-xs uppercase tracking-wider text-slate-500 dark:text-[#7E93B5] border-b border-slate-100 dark:border-[#203653]">
               <tr>
                 <th className="px-5 py-3.5 font-medium">Request</th>
                 <th className="px-5 py-3.5 font-medium">Employee</th>
@@ -227,30 +227,30 @@ export const WFHPage: React.FC = () => {
                 <th className="px-5 py-3.5 font-medium text-right">Review Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-[#203653]/60">
               {requests.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-5 py-12 text-center text-slate-500">
-                    <Laptop className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                    <p className="text-sm font-medium text-slate-700">No WFH requests found</p>
-                    <p className="text-xs text-slate-400">
+                  <td colSpan={7} className="px-5 py-12 text-center text-slate-500 dark:text-[#7E93B5]">
+                    <Laptop className="w-8 h-8 text-slate-300 dark:text-[#203653] mx-auto mb-2" />
+                    <p className="text-sm font-medium text-slate-700 dark:text-[#EAF2FF]">No WFH requests found</p>
+                    <p className="text-xs text-slate-400 dark:text-[#7E93B5]">
                       Requests matching the selected filter will appear here.
                     </p>
                   </td>
                 </tr>
               ) : (
                 requests.map((r) => (
-                  <tr key={r.id} className="hover:bg-slate-50/60 transition-colors">
-                    <td className="px-5 py-3.5 font-mono text-xs text-slate-500">#{r.id}</td>
-                    <td className="px-5 py-3.5 font-medium text-slate-900">
+                  <tr key={r.id} className="hover:bg-slate-50/60 dark:hover:bg-[#10213D]/60 transition-colors">
+                    <td className="px-5 py-3.5 font-mono text-xs text-slate-500 dark:text-[#7E93B5]">#{r.id}</td>
+                    <td className="px-5 py-3.5 font-medium text-slate-900 dark:text-[#EAF2FF]">
                       <div>
                         <div>{r.employee_name}</div>
-                        <div className="text-[11px] font-mono text-slate-400">{r.employee_code}</div>
+                        <div className="text-[11px] font-mono text-slate-400 dark:text-[#7E93B5]">{r.employee_code}</div>
                       </div>
                     </td>
-                    <td className="px-5 py-3.5 text-xs text-slate-700">{r.start_date}</td>
-                    <td className="px-5 py-3.5 text-xs text-slate-700">{r.end_date}</td>
-                    <td className="px-5 py-3.5 text-xs text-slate-600 max-w-xs truncate" title={r.reason}>
+                    <td className="px-5 py-3.5 text-xs text-slate-700 dark:text-[#A9BCD8] font-mono">{r.start_date}</td>
+                    <td className="px-5 py-3.5 text-xs text-slate-700 dark:text-[#A9BCD8] font-mono">{r.end_date}</td>
+                    <td className="px-5 py-3.5 text-xs text-slate-600 dark:text-[#A9BCD8] max-w-xs truncate" title={r.reason}>
                       {r.reason}
                     </td>
                     <td className="px-5 py-3.5">
@@ -263,7 +263,7 @@ export const WFHPage: React.FC = () => {
                             onClick={() =>
                               handleOpenReview(r.id, 'APPROVE', r.employee_name || `Employee #${r.employee_id}`)
                             }
-                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-semibold shadow-2xs"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600/90 dark:hover:bg-emerald-600 text-white rounded-md text-xs font-semibold shadow-2xs cursor-pointer"
                             title="Approve WFH"
                           >
                             <Check className="w-3.5 h-3.5" />
@@ -273,7 +273,7 @@ export const WFHPage: React.FC = () => {
                             onClick={() =>
                               handleOpenReview(r.id, 'REJECT', r.employee_name || `Employee #${r.employee_id}`)
                             }
-                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-md text-xs font-semibold shadow-2xs"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-600 hover:bg-rose-700 dark:bg-rose-600/90 dark:hover:bg-rose-600 text-white rounded-md text-xs font-semibold shadow-2xs cursor-pointer"
                             title="Reject WFH"
                           >
                             <CloseIcon className="w-3.5 h-3.5" />
@@ -282,11 +282,11 @@ export const WFHPage: React.FC = () => {
                         </div>
                       ) : (
                         <div className="text-right">
-                          <span className="text-[11px] font-semibold text-slate-500 block">
+                          <span className="text-[11px] font-semibold text-slate-600 dark:text-[#A9BCD8] block">
                             {r.status === 'APPROVED' ? 'Approved' : 'Rejected'}
                           </span>
                           {r.reviewed_at && (
-                            <span className="text-[10px] text-slate-400 font-mono block">
+                            <span className="text-[10px] text-slate-400 dark:text-[#7E93B5] font-mono block">
                               {new Date(r.reviewed_at).toLocaleDateString()}
                             </span>
                           )}
@@ -303,18 +303,18 @@ export const WFHPage: React.FC = () => {
 
       {/* Review Modal */}
       {reviewingItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full p-6">
-            <h3 className="text-base font-bold text-slate-900 mb-1">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 dark:bg-black/75 backdrop-blur-xs p-4">
+          <div className="bg-white dark:bg-[#0C1930] rounded-2xl shadow-xl border border-slate-200 dark:border-[#203653] max-w-md w-full p-6">
+            <h3 className="text-base font-bold text-slate-900 dark:text-[#EAF2FF] mb-1">
               {reviewingItem.action === 'APPROVE' ? 'Approve WFH Request' : 'Reject WFH Request'}
             </h3>
-            <p className="text-xs text-slate-500 mb-4">
-              WFH Request #{reviewingItem.id} for <strong>{reviewingItem.employeeName}</strong>.
+            <p className="text-xs text-slate-500 dark:text-[#7E93B5] mb-4">
+              WFH Request #{reviewingItem.id} for <strong className="text-slate-800 dark:text-[#EAF2FF]">{reviewingItem.employeeName}</strong>.
             </p>
 
             <div className="space-y-3.5">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-[#A9BCD8] mb-1">
                   Review Notes (Optional)
                 </label>
                 <textarea
@@ -326,22 +326,22 @@ export const WFHPage: React.FC = () => {
                   }
                   value={reviewNotes}
                   onChange={(e) => setReviewNotes(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  className="w-full bg-slate-50 dark:bg-[#081426] border border-slate-200 dark:border-[#203653] rounded-lg p-2.5 text-xs text-slate-900 dark:text-[#EAF2FF] placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-cyan-500/20 focus:border-indigo-500 dark:focus:border-[#22D3EE]"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100 dark:border-[#203653]">
                 <button
                   type="button"
                   onClick={() => setReviewingItem(null)}
-                  className="px-3.5 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+                  className="px-3.5 py-2 text-xs font-medium text-slate-600 dark:text-[#A9BCD8] hover:bg-slate-100 dark:hover:bg-[#10213D] rounded-lg cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleExecuteReview}
                   disabled={isReviewSubmitting}
-                  className={`px-4 py-2 text-white text-xs font-semibold rounded-lg disabled:opacity-50 ${
+                  className={`px-4 py-2 text-white text-xs font-semibold rounded-lg disabled:opacity-50 cursor-pointer ${
                     reviewingItem.action === 'APPROVE'
                       ? 'bg-emerald-600 hover:bg-emerald-700'
                       : 'bg-rose-600 hover:bg-rose-700'
@@ -361,25 +361,25 @@ export const WFHPage: React.FC = () => {
 
       {/* Submit WFH Request Modal */}
       {isSubmitModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full p-6">
-            <h3 className="text-base font-bold text-slate-900 mb-1">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 dark:bg-black/75 backdrop-blur-xs p-4">
+          <div className="bg-white dark:bg-[#0C1930] rounded-2xl shadow-xl border border-slate-200 dark:border-[#203653] max-w-md w-full p-6">
+            <h3 className="text-base font-bold text-slate-900 dark:text-[#EAF2FF] mb-1">
               Submit WFH Request
             </h3>
-            <p className="text-xs text-slate-500 mb-4">
+            <p className="text-xs text-slate-500 dark:text-[#7E93B5] mb-4">
               Record a Work-from-Home request in the PostgreSQL database.
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-[#A9BCD8] mb-1">
                   Employee *
                 </label>
                 <select
                   required
                   value={formData.employee_id}
                   onChange={(e) => setFormData({ ...formData, employee_id: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  className="w-full bg-slate-50 dark:bg-[#081426] border border-slate-200 dark:border-[#203653] rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-[#EAF2FF] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-cyan-500/20 focus:border-indigo-500 dark:focus:border-[#22D3EE]"
                 >
                   <option value="">Select Employee...</option>
                   {employees.map((e) => (
@@ -392,7 +392,7 @@ export const WFHPage: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-[#A9BCD8] mb-1">
                     Start Date *
                   </label>
                   <input
@@ -400,11 +400,11 @@ export const WFHPage: React.FC = () => {
                     required
                     value={formData.start_date}
                     onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    className="w-full bg-slate-50 dark:bg-[#081426] border border-slate-200 dark:border-[#203653] rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-[#EAF2FF] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-cyan-500/20 focus:border-indigo-500 dark:focus:border-[#22D3EE]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-[#A9BCD8] mb-1">
                     End Date *
                   </label>
                   <input
@@ -412,13 +412,13 @@ export const WFHPage: React.FC = () => {
                     required
                     value={formData.end_date}
                     onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    className="w-full bg-slate-50 dark:bg-[#081426] border border-slate-200 dark:border-[#203653] rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-[#EAF2FF] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-cyan-500/20 focus:border-indigo-500 dark:focus:border-[#22D3EE]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-[#A9BCD8] mb-1">
                   Reason *
                 </label>
                 <textarea
@@ -427,22 +427,22 @@ export const WFHPage: React.FC = () => {
                   placeholder="Detail work arrangement justification..."
                   value={formData.reason}
                   onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  className="w-full bg-slate-50 dark:bg-[#081426] border border-slate-200 dark:border-[#203653] rounded-lg p-2.5 text-xs text-slate-900 dark:text-[#EAF2FF] placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-cyan-500/20 focus:border-indigo-500 dark:focus:border-[#22D3EE]"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100 dark:border-[#203653]">
                 <button
                   type="button"
                   onClick={() => setIsSubmitModalOpen(false)}
-                  className="px-3.5 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+                  className="px-3.5 py-2 text-xs font-medium text-slate-600 dark:text-[#A9BCD8] hover:bg-slate-100 dark:hover:bg-[#10213D] rounded-lg cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                  className="px-4 py-2 bg-indigo-600 dark:bg-[#3B82F6] text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 dark:hover:bg-blue-600 disabled:opacity-50 cursor-pointer"
                 >
                   {isSubmitting ? 'Submitting...' : 'Submit Request'}
                 </button>

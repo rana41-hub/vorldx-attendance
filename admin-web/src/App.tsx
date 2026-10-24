@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { AppLayout } from './components/layout/AppLayout';
 import { LoginPage } from './features/auth/LoginPage';
@@ -47,46 +48,48 @@ export const App: React.FC = () => {
 
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <Routes>
-          {/* Public Authentication Route */}
-          <Route path="/login" element={<LoginPage />} />
+      <ThemeProvider>
+        <AuthProvider>
+          <Routes>
+            {/* Public Authentication Route */}
+            <Route path="/login" element={<LoginPage />} />
 
-          {/* Dedicated Fullscreen Office Attendance Kiosk Route */}
-          <Route
-            path="/kiosk"
-            element={
-              <ProtectedRoute>
-                <KioskPage />
-              </ProtectedRoute>
-            }
-          />
+            {/* Dedicated Fullscreen Office Attendance Kiosk Route */}
+            <Route
+              path="/kiosk"
+              element={
+                <ProtectedRoute>
+                  <KioskPage />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Protected Administrator Application Routes */}
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <AppLayout
-                  health={health}
-                  onRefreshHealth={fetchHealth}
-                  isHealthLoading={isHealthLoading}
-                />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<DashboardPage health={health} />} />
-            <Route path="employees" element={<EmployeesPage />} />
-            <Route path="attendance" element={<AttendancePage />} />
-            <Route path="leave" element={<LeavePage />} />
-            <Route path="wfh" element={<WFHPage />} />
-            <Route path="policy" element={<PolicyPage />} />
-            <Route path="reports" element={<ReportsPage />} />
-            <Route path="settings" element={<SettingsPage health={health} />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Route>
-        </Routes>
-      </AuthProvider>
+            {/* Protected Administrator Application Routes */}
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <AppLayout
+                    health={health}
+                    onRefreshHealth={fetchHealth}
+                    isHealthLoading={isHealthLoading}
+                  />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<DashboardPage health={health} />} />
+              <Route path="employees" element={<EmployeesPage />} />
+              <Route path="attendance" element={<AttendancePage />} />
+              <Route path="leave" element={<LeavePage />} />
+              <Route path="wfh" element={<WFHPage />} />
+              <Route path="policy" element={<PolicyPage />} />
+              <Route path="reports" element={<ReportsPage />} />
+              <Route path="settings" element={<SettingsPage health={health} />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
+          </Routes>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 };

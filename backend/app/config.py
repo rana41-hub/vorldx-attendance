@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     DEBUG: bool = Field(default=False)
 
     DATABASE_URL: str
+    TEST_DATABASE_URL: str | None = Field(default=None)
 
     # CORS configuration
     CORS_ORIGINS: str = Field(
@@ -56,6 +57,20 @@ class Settings(BaseSettings):
                 netloc = parsed.netloc.replace(f":{parsed.password}@", ":******@")
                 return parsed._replace(netloc=netloc).geturl()
             return self.DATABASE_URL
+        except Exception:
+            return "postgresql://***:***@***/***"
+
+    @property
+    def masked_test_database_url(self) -> str:
+        """Returns the test database URL with the password masked for safe logging."""
+        if not self.TEST_DATABASE_URL:
+            return "None"
+        try:
+            parsed = urlparse(self.TEST_DATABASE_URL)
+            if parsed.password:
+                netloc = parsed.netloc.replace(f":{parsed.password}@", ":******@")
+                return parsed._replace(netloc=netloc).geturl()
+            return self.TEST_DATABASE_URL
         except Exception:
             return "postgresql://***:***@***/***"
 

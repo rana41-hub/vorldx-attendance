@@ -13,9 +13,11 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
+import { useTheme } from '../context/ThemeContext';
 
 export const LoginScreen: React.FC = () => {
   const { login, baseUrl, updateBaseUrl, isBackendOnline, showToast } = useApp();
+  const { colors, isDark, toggleTheme } = useTheme();
 
   const [employeeId, setEmployeeId] = useState('');
   const [password, setPassword] = useState('');
@@ -60,7 +62,6 @@ export const LoginScreen: React.FC = () => {
     }
   };
 
-
   const handleSaveServerUrl = async () => {
     if (!customUrl.trim()) return;
     await updateBaseUrl(customUrl.trim());
@@ -70,83 +71,167 @@ export const LoginScreen: React.FC = () => {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Server Connection Banner */}
-        <TouchableOpacity
-          style={[
-            styles.connectionBanner,
-            isBackendOnline ? styles.connOnline : styles.connOffline,
-          ]}
-          onPress={() => {
-            setCustomUrl(baseUrl);
-            setShowServerModal(true);
-          }}
-          activeOpacity={0.8}
-        >
-          <View style={styles.connStatusRow}>
-            <View style={styles.connBadge}>
+        {/* Top Bar with Theme Switcher & Connection */}
+        <View style={styles.topBar}>
+          <TouchableOpacity
+            style={[
+              styles.connectionBanner,
+              {
+                backgroundColor: isBackendOnline ? colors.successBg : colors.dangerBg,
+                borderColor: isBackendOnline
+                  ? isDark ? 'rgba(52, 211, 153, 0.4)' : '#A7F3D0'
+                  : isDark ? 'rgba(251, 113, 133, 0.4)' : '#FECACA',
+              },
+            ]}
+            onPress={() => {
+              setCustomUrl(baseUrl);
+              setShowServerModal(true);
+            }}
+            activeOpacity={0.8}
+          >
+            <View style={styles.connStatusRow}>
+              <View style={styles.connBadge}>
+                <View
+                  style={[
+                    styles.serverDot,
+                    { backgroundColor: isBackendOnline ? colors.success : colors.danger },
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.connStatusText,
+                    { color: isBackendOnline ? colors.success : colors.danger },
+                  ]}
+                >
+                  {isBackendOnline ? 'Server Online' : 'Server Offline'}
+                </Text>
+              </View>
               <View
                 style={[
-                  styles.serverDot,
-                  { backgroundColor: isBackendOnline ? '#10B981' : '#EF4444' },
+                  styles.connUrlBadge,
+                  { backgroundColor: isDark ? colors.surface : 'rgba(255, 255, 255, 0.7)' },
                 ]}
-              />
-              <Text style={[styles.connStatusText, { color: isBackendOnline ? '#065F46' : '#991B1B' }]}>
-                {isBackendOnline ? 'Server Online' : 'Server Offline'}
-              </Text>
+              >
+                <Text
+                  style={[styles.connUrlText, { color: colors.textSecondary }]}
+                  numberOfLines={1}
+                >
+                  {baseUrl.replace(/^https?:\/\//, '')}
+                </Text>
+                <Ionicons name="settings-outline" size={13} color={colors.primary} />
+              </View>
             </View>
-            <View style={styles.connUrlBadge}>
-              <Text style={styles.connUrlText} numberOfLines={1}>
-                {baseUrl.replace(/^https?:\/\//, '')}
+            {!isBackendOnline && (
+              <Text style={[styles.connHintText, { color: colors.danger }]}>
+                Tap to configure IP or ensure uvicorn runs with --host 0.0.0.0
               </Text>
-              <Ionicons name="settings-outline" size={14} color="#4F46E5" />
-            </View>
-          </View>
-          {!isBackendOnline && (
-            <Text style={styles.connHintText}>
-              Tap to configure IP or ensure uvicorn runs with --host 0.0.0.0
-            </Text>
-          )}
-        </TouchableOpacity>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.themeToggleBtn,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+              },
+            ]}
+            onPress={toggleTheme}
+            activeOpacity={0.7}
+            accessibilityLabel="Toggle Light or Dark mode"
+          >
+            <Ionicons
+              name={isDark ? 'sunny' : 'moon'}
+              size={18}
+              color={isDark ? '#FBBF24' : '#4F46E5'}
+            />
+          </TouchableOpacity>
+        </View>
 
         {/* Brand Header */}
         <View style={styles.brandContainer}>
-          <View style={styles.logoBadge}>
+          <View
+            style={[
+              styles.logoBadge,
+              {
+                backgroundColor: colors.primary,
+                shadowColor: isDark ? colors.accentCyan : colors.primary,
+              },
+            ]}
+          >
             <Ionicons name="finger-print" size={38} color="#FFFFFF" />
           </View>
-          <Text style={styles.brandTitle}>VorldX Attendance</Text>
-          <Text style={styles.brandSubtitle}>Employee Mobile Self-Service Portal</Text>
+          <Text style={[styles.brandTitle, { color: colors.textPrimary }]}>
+            VorldX Attendance
+          </Text>
+          <Text style={[styles.brandSubtitle, { color: colors.textSecondary }]}>
+            Employee Mobile Self-Service Portal
+          </Text>
         </View>
 
         {/* Login Card */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Sign In</Text>
-          <Text style={styles.cardSubtitle}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: colors.surface,
+              borderColor: isDark ? colors.borderSubtle : colors.border,
+              shadowColor: isDark ? colors.accentCyan : '#000000',
+              shadowOpacity: isDark ? 0.08 : 0.04,
+            },
+          ]}
+        >
+          <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>Sign In</Text>
+          <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
             Enter your assigned Employee ID and password to access your attendance records.
           </Text>
 
           {errorMessage && (
-            <View style={styles.errorBox}>
-              <Ionicons name="alert-circle" size={18} color="#DC2626" />
-              <Text style={styles.errorText}>{errorMessage}</Text>
+            <View
+              style={[
+                styles.errorBox,
+                {
+                  backgroundColor: colors.dangerBg,
+                  borderColor: isDark ? 'rgba(251, 113, 133, 0.4)' : '#FECACA',
+                },
+              ]}
+            >
+              <Ionicons name="alert-circle" size={18} color={colors.danger} />
+              <Text style={[styles.errorText, { color: colors.danger }]}>{errorMessage}</Text>
             </View>
           )}
 
           {/* Employee ID Field */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Employee ID</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="card-outline" size={20} color="#64748B" style={styles.inputIcon} />
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+              Employee ID
+            </Text>
+            <View
+              style={[
+                styles.inputWrapper,
+                {
+                  backgroundColor: colors.inputBackground,
+                  borderColor: colors.inputBorder,
+                },
+              ]}
+            >
+              <Ionicons
+                name="card-outline"
+                size={20}
+                color={colors.textMuted}
+                style={styles.inputIcon}
+              />
               <TextInput
-                style={styles.textInput}
+                style={[styles.textInput, { color: colors.textPrimary }]}
                 placeholder="e.g. VX-0101"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={colors.textMuted}
                 value={employeeId}
                 onChangeText={(text) => {
                   setEmployeeId(text);
@@ -160,13 +245,28 @@ export const LoginScreen: React.FC = () => {
 
           {/* Password Field */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Password</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="lock-closed-outline" size={20} color="#64748B" style={styles.inputIcon} />
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+              Password
+            </Text>
+            <View
+              style={[
+                styles.inputWrapper,
+                {
+                  backgroundColor: colors.inputBackground,
+                  borderColor: colors.inputBorder,
+                },
+              ]}
+            >
+              <Ionicons
+                name="lock-closed-outline"
+                size={20}
+                color={colors.textMuted}
+                style={styles.inputIcon}
+              />
               <TextInput
-                style={styles.textInput}
+                style={[styles.textInput, { color: colors.textPrimary }]}
                 placeholder="••••••••••••"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={colors.textMuted}
                 secureTextEntry={!showPassword}
                 value={password}
                 onChangeText={(text) => {
@@ -182,7 +282,7 @@ export const LoginScreen: React.FC = () => {
                 <Ionicons
                   name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                   size={20}
-                  color="#64748B"
+                  color={colors.textMuted}
                 />
               </TouchableOpacity>
             </View>
@@ -190,7 +290,11 @@ export const LoginScreen: React.FC = () => {
 
           {/* Submit Button */}
           <TouchableOpacity
-            style={[styles.submitBtn, isSubmitting && styles.submitBtnDisabled]}
+            style={[
+              styles.submitBtn,
+              { backgroundColor: colors.primary },
+              isSubmitting && styles.submitBtnDisabled,
+            ]}
             onPress={handleLogin}
             disabled={isSubmitting}
             activeOpacity={0.85}
@@ -204,11 +308,9 @@ export const LoginScreen: React.FC = () => {
               </>
             )}
           </TouchableOpacity>
-
-
         </View>
 
-        <Text style={styles.footerNote}>
+        <Text style={[styles.footerNote, { color: colors.textMuted }]}>
           Authorized VorldX personnel only. All access is logged and verified against organization attendance policies.
         </Text>
       </ScrollView>
@@ -216,22 +318,42 @@ export const LoginScreen: React.FC = () => {
       {/* Backend URL Configuration Modal */}
       <Modal visible={showServerModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View
+            style={[
+              styles.modalContent,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                borderTopWidth: 1,
+              },
+            ]}
+          >
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Backend API Configuration</Text>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
+                Backend API Configuration
+              </Text>
               <TouchableOpacity onPress={() => setShowServerModal(false)}>
-                <Ionicons name="close" size={24} color="#64748B" />
+                <Ionicons name="close" size={24} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.modalSubtitle}>
+            <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
               Configure the API base URL to match your development host:
             </Text>
 
             <View style={styles.modalInputGroup}>
-              <Text style={styles.inputLabel}>Current Base URL</Text>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+                Current Base URL
+              </Text>
               <TextInput
-                style={styles.modalInput}
+                style={[
+                  styles.modalInput,
+                  {
+                    backgroundColor: colors.inputBackground,
+                    borderColor: colors.inputBorder,
+                    color: colors.textPrimary,
+                  },
+                ]}
                 value={customUrl}
                 onChangeText={setCustomUrl}
                 autoCapitalize="none"
@@ -242,31 +364,48 @@ export const LoginScreen: React.FC = () => {
             {/* Quick Presets */}
             <View style={styles.presetsRow}>
               <TouchableOpacity
-                style={[styles.presetChip, styles.presetChipHighlight]}
+                style={[
+                  styles.presetChip,
+                  {
+                    backgroundColor: colors.primaryLight,
+                    borderColor: colors.primary,
+                    borderWidth: 1,
+                  },
+                ]}
                 onPress={() => setCustomUrl('http://172.20.10.2:8000')}
               >
-                <Text style={styles.presetChipHighlightText}>
+                <Text style={[styles.presetChipHighlightText, { color: colors.primary }]}>
                   ★ 172.20.10.2:8000 (Your Hotspot / Wi-Fi IP)
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.presetChip}
+                style={[
+                  styles.presetChip,
+                  { backgroundColor: colors.secondaryBackground },
+                ]}
                 onPress={() => setCustomUrl('http://127.0.0.1:8000')}
               >
-                <Text style={styles.presetChipText}>127.0.0.1:8000 (Localhost / Simulator)</Text>
+                <Text style={[styles.presetChipText, { color: colors.textPrimary }]}>
+                  127.0.0.1:8000 (Localhost / Simulator)
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.presetChip}
+                style={[
+                  styles.presetChip,
+                  { backgroundColor: colors.secondaryBackground },
+                ]}
                 onPress={() => setCustomUrl('http://10.0.2.2:8000')}
               >
-                <Text style={styles.presetChipText}>10.0.2.2:8000 (Android Emulator)</Text>
+                <Text style={[styles.presetChipText, { color: colors.textPrimary }]}>
+                  10.0.2.2:8000 (Android Emulator)
+                </Text>
               </TouchableOpacity>
             </View>
 
             <TouchableOpacity
-              style={styles.modalSaveBtn}
+              style={[styles.modalSaveBtn, { backgroundColor: colors.primary }]}
               onPress={handleSaveServerUrl}
               activeOpacity={0.8}
             >
@@ -292,14 +431,24 @@ const styles = StyleSheet.create({
   },
   topBar: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 20,
+    gap: 10,
+  },
+  themeToggleBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   connectionBanner: {
+    flex: 1,
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 14,
-    marginBottom: 20,
     borderWidth: 1,
   },
   connOnline: {

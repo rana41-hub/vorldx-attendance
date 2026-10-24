@@ -19,12 +19,14 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
+import { useTheme } from '../context/ThemeContext';
 import { ApiService } from '../services/api';
 import type { WFHRequest, WFHStatus } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
 
 export const WFHScreen: React.FC = () => {
   const { currentEmployee, user, showToast } = useApp();
+  const { colors, isDark } = useTheme();
   const [requests, setRequests] = useState<WFHRequest[]>([]);
   const [filteredRequests, setFilteredRequests] = useState<WFHRequest[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<'ALL' | WFHStatus>('ALL');
@@ -131,68 +133,93 @@ export const WFHScreen: React.FC = () => {
   };
 
   const renderItem = ({ item }: { item: WFHRequest }) => (
-    <View style={styles.card}>
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: colors.surface,
+          borderColor: isDark ? colors.borderSubtle : colors.border,
+          shadowColor: isDark ? colors.accentCyan : '#000000',
+          shadowOpacity: isDark ? 0.08 : 0.03,
+        },
+      ]}
+    >
       <View style={styles.cardHeader}>
         <View style={styles.periodRow}>
-          <Ionicons name="home-outline" size={16} color="#0D9488" />
-          <Text style={styles.periodText}>
+          <Ionicons name="home-outline" size={16} color={isDark ? colors.accentCyan : '#0D9488'} />
+          <Text style={[styles.periodText, { color: colors.textPrimary }]}>
             {item.start_date} → {item.end_date}
           </Text>
         </View>
         <StatusBadge status={item.status} size="sm" />
       </View>
 
-      <Text style={styles.reasonText}>{item.reason}</Text>
+      <Text style={[styles.reasonText, { color: colors.textSecondary }]}>{item.reason}</Text>
 
-      <View style={styles.cardFooter}>
+      <View style={[styles.cardFooter, { borderTopColor: colors.border }]}>
         <View style={styles.footerDateCol}>
-          <Text style={styles.footerDate}>
+          <Text style={[styles.footerDate, { color: colors.textMuted }]}>
             Submitted {new Date(item.created_at).toLocaleDateString()}
           </Text>
           {item.reviewed_at && (
-            <Text style={styles.decisionDate}>
+            <Text style={[styles.decisionDate, { color: isDark ? colors.accentCyan : colors.success }]}>
               Decision: {item.status.charAt(0) + item.status.slice(1).toLowerCase()} on {new Date(item.reviewed_at).toLocaleDateString()}
             </Text>
           )}
         </View>
-        <Text style={styles.reqId}>WFH #{item.id}</Text>
+        <Text style={[styles.reqId, { color: colors.textMuted }]}>WFH #{item.id}</Text>
       </View>
     </View>
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Top Banner & Apply Action */}
       <View style={styles.topInfo}>
         <View>
-          <Text style={styles.title}>Work from Home</Text>
-          <Text style={styles.subtitle}>Remote work applications and approval history</Text>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>Work from Home</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Remote work applications and approval history</Text>
         </View>
-        <TouchableOpacity style={styles.applyBtn} onPress={openModal} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={[styles.applyBtn, { backgroundColor: colors.primary }]}
+          onPress={openModal}
+          activeOpacity={0.8}
+        >
           <Ionicons name="add" size={18} color="#FFFFFF" />
           <Text style={styles.applyBtnText}>Request</Text>
         </TouchableOpacity>
       </View>
 
       {/* Policy & Eligibility Card */}
-      <View style={styles.eligibilityCard}>
+      <View
+        style={[
+          styles.eligibilityCard,
+          {
+            backgroundColor: colors.surface,
+            borderColor: isDark ? colors.borderSubtle : '#CCFBF1',
+            shadowColor: isDark ? colors.accentCyan : '#0D9488',
+          },
+        ]}
+      >
         <View style={styles.eligibilityHeader}>
           <View style={styles.policyRow}>
-            <Ionicons name="shield-checkmark" size={16} color="#0D9488" />
-            <Text style={styles.eligibilityTitle}>Remote Work Policy & Status</Text>
+            <Ionicons name="shield-checkmark" size={16} color={isDark ? colors.accentCyan : '#0D9488'} />
+            <Text style={[styles.eligibilityTitle, { color: isDark ? colors.accentCyan : '#0F766E' }]}>
+              Remote Work Policy & Status
+            </Text>
           </View>
           <View
             style={[
               styles.badge,
-              user?.is_active !== false && currentEmployee ? styles.badgeEligible : styles.badgeIneligible,
+              user?.is_active !== false && currentEmployee
+                ? { backgroundColor: colors.successBg }
+                : { backgroundColor: colors.dangerBg },
             ]}
           >
             <Text
               style={[
                 styles.badgeText,
-                user?.is_active !== false && currentEmployee
-                  ? styles.badgeTextEligible
-                  : styles.badgeTextIneligible,
+                { color: user?.is_active !== false && currentEmployee ? colors.success : colors.danger },
               ]}
             >
               {user?.is_active !== false && currentEmployee ? 'Eligible' : 'Ineligible'}
@@ -200,30 +227,35 @@ export const WFHScreen: React.FC = () => {
           </View>
         </View>
 
-        <Text style={styles.eligibilityDescription}>
+        <Text style={[styles.eligibilityDescription, { color: colors.textSecondary }]}>
           Active employees are eligible for remote work authorization. Approved requests authorize remote status; daily check-in is still required through the app.
         </Text>
 
-        <View style={styles.statCounters}>
+        <View
+          style={[
+            styles.statCounters,
+            { backgroundColor: colors.secondaryBackground },
+          ]}
+        >
           <View style={styles.counterItem}>
-            <Text style={styles.counterVal}>
+            <Text style={[styles.counterVal, { color: colors.success }]}>
               {requests.filter((r) => r.status === 'APPROVED').length}
             </Text>
-            <Text style={styles.counterLabel}>Approved</Text>
+            <Text style={[styles.counterLabel, { color: colors.textSecondary }]}>Approved</Text>
           </View>
-          <View style={styles.counterDivider} />
+          <View style={[styles.counterDivider, { backgroundColor: colors.border }]} />
           <View style={styles.counterItem}>
-            <Text style={styles.counterVal}>
+            <Text style={[styles.counterVal, { color: colors.warning }]}>
               {requests.filter((r) => r.status === 'PENDING').length}
             </Text>
-            <Text style={styles.counterLabel}>Pending</Text>
+            <Text style={[styles.counterLabel, { color: colors.textSecondary }]}>Pending</Text>
           </View>
-          <View style={styles.counterDivider} />
+          <View style={[styles.counterDivider, { backgroundColor: colors.border }]} />
           <View style={styles.counterItem}>
-            <Text style={styles.counterVal}>
+            <Text style={[styles.counterVal, { color: colors.danger }]}>
               {requests.filter((r) => r.status === 'REJECTED').length}
             </Text>
-            <Text style={styles.counterLabel}>Rejected</Text>
+            <Text style={[styles.counterLabel, { color: colors.textSecondary }]}>Rejected</Text>
           </View>
         </View>
       </View>
@@ -235,10 +267,22 @@ export const WFHScreen: React.FC = () => {
           return (
             <TouchableOpacity
               key={filter}
-              style={[styles.filterChip, isActive && styles.filterChipActive]}
+              style={[
+                styles.filterChip,
+                {
+                  backgroundColor: isActive ? colors.primary : colors.surface,
+                  borderColor: isActive ? colors.primary : colors.border,
+                },
+              ]}
               onPress={() => setSelectedFilter(filter)}
             >
-              <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
+              <Text
+                style={[
+                  styles.filterChipText,
+                  { color: isActive ? '#FFFFFF' : colors.textSecondary },
+                  isActive && styles.filterChipTextActive,
+                ]}
+              >
                 {filter === 'ALL' ? 'All' : filter.charAt(0) + filter.slice(1).toLowerCase()}
               </Text>
             </TouchableOpacity>
@@ -248,15 +292,15 @@ export const WFHScreen: React.FC = () => {
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0D9488" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : filteredRequests.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <View style={styles.emptyIcon}>
-            <Ionicons name="desktop-outline" size={36} color="#94A3B8" />
+          <View style={[styles.emptyIcon, { backgroundColor: colors.secondaryBackground }]}>
+            <Ionicons name="desktop-outline" size={36} color={colors.textMuted} />
           </View>
-          <Text style={styles.emptyTitle}>No WFH Requests Found</Text>
-          <Text style={styles.emptySubtitle}>
+          <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>No WFH Requests Found</Text>
+          <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
             {selectedFilter === 'ALL'
               ? 'Tap "Request" above to submit a new Work-from-Home application.'
               : `You have no ${selectedFilter.toLowerCase()} WFH requests.`}
@@ -275,6 +319,7 @@ export const WFHScreen: React.FC = () => {
                 setIsRefreshing(true);
                 fetchWFH();
               }}
+              tintColor={colors.primary}
             />
           }
         />
@@ -295,14 +340,23 @@ export const WFHScreen: React.FC = () => {
             <View style={styles.modalBackdrop} />
           </TouchableWithoutFeedback>
 
-          <View style={styles.modalContent}>
+          <View
+            style={[
+              styles.modalContent,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                borderTopWidth: 1,
+              },
+            ]}
+          >
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Request Remote Work</Text>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Request Remote Work</Text>
               <TouchableOpacity
                 onPress={() => setModalVisible(false)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Ionicons name="close" size={24} color="#64748B" />
+                <Ionicons name="close" size={24} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
 
@@ -314,62 +368,105 @@ export const WFHScreen: React.FC = () => {
               {/* Date Presets Row */}
               <View style={styles.presetsRow}>
                 <TouchableOpacity
-                  style={styles.presetChip}
+                  style={[
+                    styles.presetChip,
+                    {
+                      backgroundColor: isDark ? colors.surfaceElevated : '#CCFBF1',
+                      borderColor: colors.border,
+                      borderWidth: isDark ? 1 : 0,
+                    },
+                  ]}
                   onPress={() => setPresetDays(1)}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.presetChipText}>Tomorrow (1d)</Text>
+                  <Text style={[styles.presetChipText, { color: isDark ? colors.accentCyan : '#0F766E' }]}>Tomorrow (1d)</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={styles.presetChip}
+                  style={[
+                    styles.presetChip,
+                    {
+                      backgroundColor: isDark ? colors.surfaceElevated : '#CCFBF1',
+                      borderColor: colors.border,
+                      borderWidth: isDark ? 1 : 0,
+                    },
+                  ]}
                   onPress={() => setPresetDays(2)}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.presetChipText}>2 Days</Text>
+                  <Text style={[styles.presetChipText, { color: isDark ? colors.accentCyan : '#0F766E' }]}>2 Days</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={styles.presetChip}
+                  style={[
+                    styles.presetChip,
+                    {
+                      backgroundColor: isDark ? colors.surfaceElevated : '#CCFBF1',
+                      borderColor: colors.border,
+                      borderWidth: isDark ? 1 : 0,
+                    },
+                  ]}
                   onPress={() => setPresetDays(5)}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.presetChipText}>Full Week (5d)</Text>
+                  <Text style={[styles.presetChipText, { color: isDark ? colors.accentCyan : '#0F766E' }]}>Full Week (5d)</Text>
                 </TouchableOpacity>
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>Start Date (YYYY-MM-DD)</Text>
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Start Date (YYYY-MM-DD)</Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={[
+                    styles.textInput,
+                    {
+                      backgroundColor: colors.inputBackground,
+                      borderColor: colors.inputBorder,
+                      color: colors.textPrimary,
+                    },
+                  ]}
                   value={startDate}
                   onChangeText={setStartDate}
                   placeholder="2026-10-16"
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={colors.textMuted}
                   keyboardType="numbers-and-punctuation"
                   autoCorrect={false}
                 />
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>End Date (YYYY-MM-DD)</Text>
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>End Date (YYYY-MM-DD)</Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={[
+                    styles.textInput,
+                    {
+                      backgroundColor: colors.inputBackground,
+                      borderColor: colors.inputBorder,
+                      color: colors.textPrimary,
+                    },
+                  ]}
                   value={endDate}
                   onChangeText={setEndDate}
                   placeholder="2026-10-17"
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={colors.textMuted}
                   keyboardType="numbers-and-punctuation"
                   autoCorrect={false}
                 />
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>Reason / Project Focus</Text>
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Reason / Project Focus</Text>
                 <TextInput
-                  style={[styles.textInput, styles.textArea]}
+                  style={[
+                    styles.textInput,
+                    styles.textArea,
+                    {
+                      backgroundColor: colors.inputBackground,
+                      borderColor: colors.inputBorder,
+                      color: colors.textPrimary,
+                    },
+                  ]}
                   value={reason}
                   onChangeText={setReason}
                   placeholder="Describe your remote focus or reason (e.g. Focus sprint, architecture design)..."
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={colors.textMuted}
                   multiline
                   numberOfLines={3}
                   textAlignVertical="top"
@@ -378,15 +475,19 @@ export const WFHScreen: React.FC = () => {
 
               <View style={styles.modalActions}>
                 <TouchableOpacity
-                  style={styles.cancelBtn}
+                  style={[styles.cancelBtn, { backgroundColor: colors.secondaryBackground }]}
                   onPress={() => setModalVisible(false)}
                   disabled={isSubmitting}
                 >
-                  <Text style={styles.cancelBtnText}>Cancel</Text>
+                  <Text style={[styles.cancelBtnText, { color: colors.textSecondary }]}>Cancel</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.submitBtn, isSubmitting && styles.btnDisabled]}
+                  style={[
+                    styles.submitBtn,
+                    { backgroundColor: colors.primary },
+                    isSubmitting && styles.btnDisabled,
+                  ]}
                   onPress={handleSubmit}
                   disabled={isSubmitting}
                 >

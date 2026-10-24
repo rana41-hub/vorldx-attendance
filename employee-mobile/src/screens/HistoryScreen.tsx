@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
+import { useTheme } from '../context/ThemeContext';
 import { ApiService } from '../services/api';
 import type { AttendanceRecord } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
@@ -19,6 +20,7 @@ import { formatTime, formatDuration } from '../utils/formatters';
 
 export const HistoryScreen: React.FC = () => {
   const { currentEmployee } = useApp();
+  const { colors, isDark } = useTheme();
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -61,11 +63,21 @@ export const HistoryScreen: React.FC = () => {
   };
 
   const renderItem = ({ item }: { item: AttendanceRecord }) => (
-    <View style={styles.card}>
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: colors.surface,
+          borderColor: isDark ? colors.borderSubtle : colors.border,
+          shadowColor: isDark ? colors.accentCyan : '#000000',
+          shadowOpacity: isDark ? 0.08 : 0.03,
+        },
+      ]}
+    >
       <View style={styles.cardHeader}>
         <View style={styles.dateRow}>
-          <Ionicons name="calendar-outline" size={16} color="#6366F1" />
-          <Text style={styles.dateText}>{item.attendance_date}</Text>
+          <Ionicons name="calendar-outline" size={16} color={isDark ? colors.accentCyan : colors.primary} />
+          <Text style={[styles.dateText, { color: colors.textPrimary }]}>{item.attendance_date}</Text>
         </View>
         <StatusBadge
           status={
@@ -79,56 +91,76 @@ export const HistoryScreen: React.FC = () => {
         />
       </View>
 
-      <View style={styles.timesContainer}>
+      <View
+        style={[
+          styles.timesContainer,
+          {
+            backgroundColor: colors.secondaryBackground,
+            borderColor: colors.border,
+            borderWidth: 1,
+          },
+        ]}
+      >
         <View style={styles.timeCol}>
-          <Text style={styles.timeLabel}>Check-In</Text>
-          <Text style={styles.timeValue}>{formatTime(item.check_in)}</Text>
+          <Text style={[styles.timeLabel, { color: colors.textMuted }]}>Check-In</Text>
+          <Text style={[styles.timeValue, { color: colors.textPrimary }]}>{formatTime(item.check_in)}</Text>
         </View>
 
         <View style={styles.divider}>
-          <Ionicons name="arrow-forward" size={14} color="#CBD5E1" />
+          <Ionicons name="arrow-forward" size={14} color={colors.textMuted} />
         </View>
 
         <View style={styles.timeCol}>
-          <Text style={styles.timeLabel}>Check-Out</Text>
-          <Text style={styles.timeValue}>{item.check_out ? formatTime(item.check_out) : 'Pending'}</Text>
+          <Text style={[styles.timeLabel, { color: colors.textMuted }]}>Check-Out</Text>
+          <Text style={[styles.timeValue, { color: colors.textPrimary }]}>
+            {item.check_out ? formatTime(item.check_out) : 'Pending'}
+          </Text>
         </View>
 
-        <View style={styles.durationBadge}>
-          <Text style={styles.durationLabel}>Total</Text>
-          <Text style={styles.durationValue}>
+        <View
+          style={[
+            styles.durationBadge,
+            {
+              backgroundColor: isDark ? colors.surfaceElevated : colors.primaryLight,
+              borderColor: colors.border,
+              borderWidth: isDark ? 1 : 0,
+            },
+          ]}
+        >
+          <Text style={[styles.durationLabel, { color: isDark ? colors.accentCyan : colors.primary }]}>Total</Text>
+          <Text style={[styles.durationValue, { color: isDark ? colors.accentCyan : colors.primary }]}>
             {formatDuration(item.check_in, item.check_out, false)}
           </Text>
         </View>
       </View>
 
-      <View style={styles.cardFooter}>
-        <Text style={styles.sourceText}>Source: {item.source || 'OFFICE_QR'}</Text>
-        <Text style={styles.logIdText}>ID: #{item.id}</Text>
+      <View style={[styles.cardFooter, { borderTopColor: colors.border }]}>
+        <Text style={[styles.sourceText, { color: colors.textSecondary }]}>Source: {item.source || 'OFFICE_QR'}</Text>
+        <Text style={[styles.logIdText, { color: colors.textMuted }]}>ID: #{item.id}</Text>
       </View>
     </View>
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.topInfo}>
-        <Text style={styles.title}>Attendance History</Text>
-        <Text style={styles.subtitle}>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>Attendance History</Text>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
           Verified timestamps and presence logs for {currentEmployee?.first_name || 'you'}
         </Text>
       </View>
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4F46E5" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : records.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <View style={styles.emptyIcon}>
-            <Ionicons name="documents-outline" size={36} color="#94A3B8" />
+          <View style={[styles.emptyIcon, { backgroundColor: colors.secondaryBackground }]}>
+            <Ionicons name="documents-outline" size={36} color={colors.textMuted} />
           </View>
-          <Text style={styles.emptyTitle}>No Attendance Records Found</Text>
-          <Text style={styles.emptySubtitle}>
+          <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>No Attendance Records Found</Text>
+          <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
             Scan the office QR code or trigger a check-in to generate your first audit log.
           </Text>
         </View>
@@ -139,7 +171,11 @@ export const HistoryScreen: React.FC = () => {
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
           refreshControl={
-            <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+              tintColor={colors.primary}
+            />
           }
         />
       )}

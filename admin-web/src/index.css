@@ -1,14 +1,129 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   color-scheme: light;
+
+  /* Premium Light Tokens */
+  --bg-main: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-sidebar: #0f172a;
+  --bg-card: #ffffff;
+  --bg-card-elevated: #ffffff;
+  
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  
+  --border-main: #e2e8f0;
+  --border-subtle: #cbd5e1;
+  --border-accent: #38bdf8;
+  
+  --action-primary: #4f46e5;
+  --action-primary-hover: #4338ca;
+  --action-accent: #06b6d4;
+  --action-violet: #8b5cf6;
+  
+  --status-success: #10b981;
+  --status-warning: #f59e0b;
+  --status-error: #ef4444;
+  --status-info: #3b82f6;
+
+  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+  --shadow-glow: none;
+}
+
+html.dark {
+  color-scheme: dark;
+
+  /* Deep-Blue Cyberpunk Dark Tokens */
+  --bg-main: #050b18;
+  --bg-secondary: #081426;
+  --bg-sidebar: #071020;
+  --bg-card: #0c1930;
+  --bg-card-elevated: #10213d;
+  
+  --text-primary: #eaf2ff;
+  --text-secondary: #a9bcd8;
+  --text-muted: #7e93b5;
+  
+  --border-main: #203653;
+  --border-subtle: #164e63;
+  --border-accent: #22d3ee;
+  
+  --action-primary: #3b82f6;
+  --action-primary-hover: #2563eb;
+  --action-accent: #22d3ee;
+  --action-violet: #8b5cf6;
+  
+  --status-success: #34d399;
+  --status-warning: #fbbf24;
+  --status-error: #fb7185;
+  --status-info: #60a5fa;
+
+  --shadow-card: 0 4px 20px -2px rgba(5, 11, 24, 0.7);
+  --shadow-glow: 0 0 15px -3px rgba(34, 211, 238, 0.15);
 }
 
 body {
   margin: 0;
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: var(--bg-main);
+  color: var(--text-primary);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+/* Custom Cyberpunk & Glassmorphism Utilities */
+.cyber-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-main);
+  box-shadow: var(--shadow-card);
+}
+
+.dark .cyber-card {
+  background-color: #0c1930;
+  border-color: #203653;
+}
+
+.dark .cyber-card-elevated {
+  background-color: #10213d;
+  border-color: #203653;
+}
+
+.dark .cyber-glow-cyan {
+  box-shadow: 0 0 15px -2px rgba(34, 211, 238, 0.15);
+}
+
+.dark .cyber-glow-blue {
+  box-shadow: 0 0 20px -3px rgba(59, 130, 246, 0.25);
+}
+
+.dark .cyber-border-active {
+  border-color: #22d3ee;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #203653;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #2b4970;
 }

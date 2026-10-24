@@ -19,12 +19,14 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
+import { useTheme } from '../context/ThemeContext';
 import { ApiService } from '../services/api';
 import type { LeaveRequest, LeaveStatus } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
 
 export const LeaveScreen: React.FC = () => {
   const { currentEmployee, showToast } = useApp();
+  const { colors, isDark } = useTheme();
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [filteredRequests, setFilteredRequests] = useState<LeaveRequest[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<'ALL' | LeaveStatus>('ALL');
@@ -126,24 +128,34 @@ export const LeaveScreen: React.FC = () => {
   };
 
   const renderItem = ({ item }: { item: LeaveRequest }) => (
-    <View style={styles.card}>
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: colors.surface,
+          borderColor: isDark ? colors.borderSubtle : colors.border,
+          shadowColor: isDark ? colors.accentCyan : '#000000',
+          shadowOpacity: isDark ? 0.08 : 0.03,
+        },
+      ]}
+    >
       <View style={styles.cardHeader}>
         <View style={styles.periodRow}>
-          <Ionicons name="calendar-clear-outline" size={16} color="#D97706" />
-          <Text style={styles.periodText}>
+          <Ionicons name="calendar-clear-outline" size={16} color={colors.warning} />
+          <Text style={[styles.periodText, { color: colors.textPrimary }]}>
             {item.start_date} → {item.end_date}
           </Text>
         </View>
         <StatusBadge status={item.status} size="sm" />
       </View>
 
-      <Text style={styles.reasonText}>{item.reason}</Text>
+      <Text style={[styles.reasonText, { color: colors.textSecondary }]}>{item.reason}</Text>
 
-      <View style={styles.cardFooter}>
-        <Text style={styles.footerDate}>
+      <View style={[styles.cardFooter, { borderTopColor: colors.border }]}>
+        <Text style={[styles.footerDate, { color: colors.textMuted }]}>
           Submitted {new Date(item.created_at).toLocaleDateString()}
         </Text>
-        <Text style={styles.reqId}>LEAVE #{item.id}</Text>
+        <Text style={[styles.reqId, { color: colors.textMuted }]}>LEAVE #{item.id}</Text>
       </View>
     </View>
   );
@@ -152,14 +164,18 @@ export const LeaveScreen: React.FC = () => {
   const approvedCount = requests.filter((r) => r.status === 'APPROVED').length;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Top Banner & Apply Action */}
       <View style={styles.topInfo}>
         <View>
-          <Text style={styles.title}>Time Off & Leaves</Text>
-          <Text style={styles.subtitle}>Apply for leave and track review status</Text>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>Time Off & Leaves</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Apply for leave and track review status</Text>
         </View>
-        <TouchableOpacity style={styles.applyBtn} onPress={openModal} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={[styles.applyBtn, { backgroundColor: colors.primary }]}
+          onPress={openModal}
+          activeOpacity={0.8}
+        >
           <Ionicons name="add" size={18} color="#FFFFFF" />
           <Text style={styles.applyBtnText}>Apply</Text>
         </TouchableOpacity>
@@ -167,17 +183,39 @@ export const LeaveScreen: React.FC = () => {
 
       {/* Dynamic Summary Cards */}
       <View style={styles.balanceGrid}>
-        <View style={styles.balanceCard}>
-          <Text style={styles.balanceCount}>{pendingCount}</Text>
-          <Text style={styles.balanceLabel}>Pending</Text>
+        <View
+          style={[
+            styles.balanceCard,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
+        >
+          <Text style={[styles.balanceCount, { color: colors.warning }]}>{pendingCount}</Text>
+          <Text style={[styles.balanceLabel, { color: colors.textSecondary }]}>Pending</Text>
         </View>
-        <View style={styles.balanceCard}>
-          <Text style={[styles.balanceCount, { color: '#059669' }]}>{approvedCount}</Text>
-          <Text style={styles.balanceLabel}>Approved</Text>
+        <View
+          style={[
+            styles.balanceCard,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
+        >
+          <Text style={[styles.balanceCount, { color: colors.success }]}>{approvedCount}</Text>
+          <Text style={[styles.balanceLabel, { color: colors.textSecondary }]}>Approved</Text>
         </View>
-        <View style={styles.balanceCard}>
-          <Text style={[styles.balanceCount, { color: '#6366F1' }]}>{requests.length}</Text>
-          <Text style={styles.balanceLabel}>Total Requests</Text>
+        <View
+          style={[
+            styles.balanceCard,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
+        >
+          <Text
+            style={[
+              styles.balanceCount,
+              { color: isDark ? colors.accentCyan : colors.primary },
+            ]}
+          >
+            {requests.length}
+          </Text>
+          <Text style={[styles.balanceLabel, { color: colors.textSecondary }]}>Total Requests</Text>
         </View>
       </View>
 
@@ -188,10 +226,22 @@ export const LeaveScreen: React.FC = () => {
           return (
             <TouchableOpacity
               key={filter}
-              style={[styles.filterChip, isActive && styles.filterChipActive]}
+              style={[
+                styles.filterChip,
+                {
+                  backgroundColor: isActive ? colors.primary : colors.surface,
+                  borderColor: isActive ? colors.primary : colors.border,
+                },
+              ]}
               onPress={() => setSelectedFilter(filter)}
             >
-              <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
+              <Text
+                style={[
+                  styles.filterChipText,
+                  { color: isActive ? '#FFFFFF' : colors.textSecondary },
+                  isActive && styles.filterChipTextActive,
+                ]}
+              >
                 {filter === 'ALL' ? 'All' : filter.charAt(0) + filter.slice(1).toLowerCase()}
               </Text>
             </TouchableOpacity>
@@ -201,15 +251,15 @@ export const LeaveScreen: React.FC = () => {
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#D97706" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : filteredRequests.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <View style={styles.emptyIcon}>
-            <Ionicons name="airplane-outline" size={36} color="#94A3B8" />
+          <View style={[styles.emptyIcon, { backgroundColor: colors.secondaryBackground }]}>
+            <Ionicons name="airplane-outline" size={36} color={colors.textMuted} />
           </View>
-          <Text style={styles.emptyTitle}>No Leave Applications</Text>
-          <Text style={styles.emptySubtitle}>
+          <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>No Leave Applications</Text>
+          <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
             {selectedFilter === 'ALL'
               ? 'Tap "Apply" above to submit a new leave request for review.'
               : `You have no ${selectedFilter.toLowerCase()} leave requests.`}
@@ -228,6 +278,7 @@ export const LeaveScreen: React.FC = () => {
                 setIsRefreshing(true);
                 fetchLeaves();
               }}
+              tintColor={colors.primary}
             />
           }
         />
@@ -248,14 +299,23 @@ export const LeaveScreen: React.FC = () => {
             <View style={styles.modalBackdrop} />
           </TouchableWithoutFeedback>
 
-          <View style={styles.modalContent}>
+          <View
+            style={[
+              styles.modalContent,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                borderTopWidth: 1,
+              },
+            ]}
+          >
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Request Time Off</Text>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Request Time Off</Text>
               <TouchableOpacity
                 onPress={() => setModalVisible(false)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Ionicons name="close" size={24} color="#64748B" />
+                <Ionicons name="close" size={24} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
 
@@ -267,62 +327,105 @@ export const LeaveScreen: React.FC = () => {
               {/* Quick Presets */}
               <View style={styles.presetsRow}>
                 <TouchableOpacity
-                  style={styles.presetChip}
+                  style={[
+                    styles.presetChip,
+                    {
+                      backgroundColor: isDark ? colors.surfaceElevated : '#FEF3C7',
+                      borderColor: colors.border,
+                      borderWidth: isDark ? 1 : 0,
+                    },
+                  ]}
                   onPress={() => setPresetDays(1)}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.presetChipText}>Tomorrow (1d)</Text>
+                  <Text style={[styles.presetChipText, { color: colors.warning }]}>Tomorrow (1d)</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={styles.presetChip}
+                  style={[
+                    styles.presetChip,
+                    {
+                      backgroundColor: isDark ? colors.surfaceElevated : '#FEF3C7',
+                      borderColor: colors.border,
+                      borderWidth: isDark ? 1 : 0,
+                    },
+                  ]}
                   onPress={() => setPresetDays(3)}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.presetChipText}>3 Days</Text>
+                  <Text style={[styles.presetChipText, { color: colors.warning }]}>3 Days</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={styles.presetChip}
+                  style={[
+                    styles.presetChip,
+                    {
+                      backgroundColor: isDark ? colors.surfaceElevated : '#FEF3C7',
+                      borderColor: colors.border,
+                      borderWidth: isDark ? 1 : 0,
+                    },
+                  ]}
                   onPress={() => setPresetDays(5)}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.presetChipText}>1 Week (5d)</Text>
+                  <Text style={[styles.presetChipText, { color: colors.warning }]}>1 Week (5d)</Text>
                 </TouchableOpacity>
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>Start Date (YYYY-MM-DD)</Text>
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Start Date (YYYY-MM-DD)</Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={[
+                    styles.textInput,
+                    {
+                      backgroundColor: colors.inputBackground,
+                      borderColor: colors.inputBorder,
+                      color: colors.textPrimary,
+                    },
+                  ]}
                   value={startDate}
                   onChangeText={setStartDate}
                   placeholder="2026-10-20"
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={colors.textMuted}
                   keyboardType="numbers-and-punctuation"
                   autoCorrect={false}
                 />
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>End Date (YYYY-MM-DD)</Text>
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>End Date (YYYY-MM-DD)</Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={[
+                    styles.textInput,
+                    {
+                      backgroundColor: colors.inputBackground,
+                      borderColor: colors.inputBorder,
+                      color: colors.textPrimary,
+                    },
+                  ]}
                   value={endDate}
                   onChangeText={setEndDate}
                   placeholder="2026-10-22"
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={colors.textMuted}
                   keyboardType="numbers-and-punctuation"
                   autoCorrect={false}
                 />
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>Reason for Leave</Text>
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Reason for Leave</Text>
                 <TextInput
-                  style={[styles.textInput, styles.textArea]}
+                  style={[
+                    styles.textInput,
+                    styles.textArea,
+                    {
+                      backgroundColor: colors.inputBackground,
+                      borderColor: colors.inputBorder,
+                      color: colors.textPrimary,
+                    },
+                  ]}
                   value={reason}
                   onChangeText={setReason}
                   placeholder="State your reason (e.g. Personal travel, family emergency)..."
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={colors.textMuted}
                   multiline
                   numberOfLines={3}
                   textAlignVertical="top"
@@ -331,15 +434,19 @@ export const LeaveScreen: React.FC = () => {
 
               <View style={styles.modalActions}>
                 <TouchableOpacity
-                  style={styles.cancelBtn}
+                  style={[styles.cancelBtn, { backgroundColor: colors.secondaryBackground }]}
                   onPress={() => setModalVisible(false)}
                   disabled={isSubmitting}
                 >
-                  <Text style={styles.cancelBtnText}>Cancel</Text>
+                  <Text style={[styles.cancelBtnText, { color: colors.textSecondary }]}>Cancel</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.submitBtn, isSubmitting && styles.btnDisabled]}
+                  style={[
+                    styles.submitBtn,
+                    { backgroundColor: colors.primary },
+                    isSubmitting && styles.btnDisabled,
+                  ]}
                   onPress={handleSubmit}
                   disabled={isSubmitting}
                 >
